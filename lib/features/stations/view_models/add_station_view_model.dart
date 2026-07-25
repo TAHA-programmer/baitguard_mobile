@@ -2,22 +2,18 @@ import 'package:flutter/foundation.dart';
 import '../../../domain/models/register_station_request.dart';
 import '../../../domain/repositories/station_repository.dart';
 import '../../../domain/models/site.dart';
-import '../../../app/state/app_session_controller.dart';
 import '../../../app/state/active_facility_controller.dart';
 
 class AddStationViewModel extends ChangeNotifier {
   final StationRepository _stationRepository;
-  final AppSessionController _sessionController;
   final ActiveFacilityController _activeFacilityController;
   final List<Site> _availableSites;
 
   AddStationViewModel({
     required StationRepository stationRepository,
-    required AppSessionController sessionController,
     required ActiveFacilityController activeFacilityController,
     required List<Site> availableSites,
   }) : _stationRepository = stationRepository,
-       _sessionController = sessionController,
        _activeFacilityController = activeFacilityController,
        _availableSites = availableSites {
     _selectedSiteId = _activeFacilityController.selectedSiteId;
@@ -49,6 +45,7 @@ class AddStationViewModel extends ChangeNotifier {
     if (_selectedSiteId == value) return;
     _selectedSiteId = value;
     _validateForm();
+    notifyListeners();
   }
 
   String _zoneLocation = '';
@@ -68,6 +65,7 @@ class AddStationViewModel extends ChangeNotifier {
       _wifiNetworkName = null;
     }
     _validateForm();
+    notifyListeners();
   }
 
   String? _wifiNetworkName;
@@ -84,6 +82,7 @@ class AddStationViewModel extends ChangeNotifier {
   void setAlertPreferences(StationAlertPreferences prefs) {
     _alertPreferences = prefs;
     _validateForm();
+    notifyListeners();
   }
 
   // --- Validation State ---

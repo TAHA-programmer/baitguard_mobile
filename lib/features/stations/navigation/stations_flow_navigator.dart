@@ -6,7 +6,6 @@ import '../views/add_station_screen.dart';
 import '../view_models/station_detail_view_model.dart';
 import '../view_models/add_station_view_model.dart';
 import '../../../domain/repositories/station_repository.dart';
-import '../../../app/state/app_session_controller.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../domain/models/site.dart';
 
@@ -34,7 +33,6 @@ class _StationsFlowNavigatorState extends State<StationsFlowNavigator> {
           case '/add':
             builder = ChangeNotifierProvider(
               create: (ctx) {
-                final session = ctx.read<AppSessionController>();
                 final activeFacility = ctx.read<ActiveFacilityController>();
                 // The prompt says: "Populate Site / Facility from typed permitted Site data."
                 // In mock we can just use the active facility permitted sites if we have them,
@@ -59,7 +57,6 @@ class _StationsFlowNavigatorState extends State<StationsFlowNavigator> {
 
                 return AddStationViewModel(
                   stationRepository: ctx.read<StationRepository>(),
-                  sessionController: session,
                   activeFacilityController: activeFacility,
                   availableSites: sites,
                 );

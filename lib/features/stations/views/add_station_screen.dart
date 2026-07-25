@@ -83,11 +83,12 @@ class _AddStationScreenState extends State<AddStationScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     _buildAlertsCard(vm),
                     const SizedBox(height: AppSpacing.xxl),
+                    _buildBottomAction(vm),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
                 ),
               ),
             ),
-            _buildBottomAction(vm),
           ],
         ),
       ),
@@ -456,39 +457,32 @@ class _AddStationScreenState extends State<AddStationScreen> {
   }
 
   Widget _buildBottomAction(AddStationViewModel vm) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.borderSecondary)),
-      ),
-      child: ElevatedButton(
-        onPressed: vm.isSubmitting ? null : vm.submit,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.divider,
-          disabledForegroundColor: AppColors.textTertiary,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadii.md),
-          ),
-          elevation: 0,
+    return ElevatedButton(
+      onPressed: vm.isSubmitting ? null : vm.submit,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primaryBlue,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: AppColors.divider,
+        disabledForegroundColor: AppColors.textTertiary,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.md),
         ),
-        child: vm.isSubmitting
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Text(
-                'Register Station',
-                style: AppTypography.manropeBold.copyWith(fontSize: 16),
-              ),
+        elevation: 0,
       ),
+      child: vm.isSubmitting
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+          : Text(
+              'Register Station',
+              style: AppTypography.manropeBold.copyWith(fontSize: 16),
+            ),
     );
   }
 }
