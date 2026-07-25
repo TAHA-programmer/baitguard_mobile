@@ -33,26 +33,20 @@ class AlertDetailViewModel extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  String? _refreshError;
-  String? get refreshError {
-    final e = _refreshError;
-    _refreshError = null;
-    return e;
-  }
+  int _refreshErrorEventId = 0;
+  int get refreshErrorEventId => _refreshErrorEventId;
+  String? _refreshErrorMessage;
+  String? get refreshErrorMessage => _refreshErrorMessage;
 
+  int _actionSuccessEventId = 0;
+  int get actionSuccessEventId => _actionSuccessEventId;
   String? _actionSuccessMessage;
-  String? get actionSuccessMessage {
-    final m = _actionSuccessMessage;
-    _actionSuccessMessage = null;
-    return m;
-  }
+  String? get actionSuccessMessage => _actionSuccessMessage;
 
+  int _actionErrorEventId = 0;
+  int get actionErrorEventId => _actionErrorEventId;
   String? _actionErrorMessage;
-  String? get actionErrorMessage {
-    final m = _actionErrorMessage;
-    _actionErrorMessage = null;
-    return m;
-  }
+  String? get actionErrorMessage => _actionErrorMessage;
 
   Alert? _alert;
   Alert? get alert => _alert;
@@ -114,7 +108,8 @@ class AlertDetailViewModel extends ChangeNotifier {
       _alert = a;
       _station = s;
     } catch (e) {
-      _refreshError = 'Failed to refresh alert.';
+      _refreshErrorMessage = 'Failed to refresh alert.';
+      _refreshErrorEventId++;
     } finally {
       notifyListeners();
     }
@@ -144,8 +139,10 @@ class AlertDetailViewModel extends ChangeNotifier {
       );
       _alert = updated;
       _actionSuccessMessage = 'Alert resolved successfully.';
+      _actionSuccessEventId++;
     } catch (e) {
       _actionErrorMessage = 'Failed to resolve alert.';
+      _actionErrorEventId++;
     } finally {
       _isMutating = false;
       notifyListeners();
@@ -165,9 +162,11 @@ class AlertDetailViewModel extends ChangeNotifier {
         until: until,
       );
       _alert = updated;
-      _actionSuccessMessage = 'Alert snoozed.';
+      _actionSuccessMessage = 'Alert snoozed for 1 hour.';
+      _actionSuccessEventId++;
     } catch (e) {
       _actionErrorMessage = 'Failed to snooze alert.';
+      _actionErrorEventId++;
     } finally {
       _isMutating = false;
       notifyListeners();
@@ -188,8 +187,10 @@ class AlertDetailViewModel extends ChangeNotifier {
       );
       _alert = updated;
       _actionSuccessMessage = 'Alert assigned to technician.';
+      _actionSuccessEventId++;
     } catch (e) {
       _actionErrorMessage = 'Failed to assign technician.';
+      _actionErrorEventId++;
     } finally {
       _isMutating = false;
       notifyListeners();
@@ -212,8 +213,10 @@ class AlertDetailViewModel extends ChangeNotifier {
       );
       _alert = updated;
       _actionSuccessMessage = 'Alert dismissed.';
+      _actionSuccessEventId++;
     } catch (e) {
       _actionErrorMessage = 'Failed to dismiss alert.';
+      _actionErrorEventId++;
     } finally {
       _isMutating = false;
       notifyListeners();

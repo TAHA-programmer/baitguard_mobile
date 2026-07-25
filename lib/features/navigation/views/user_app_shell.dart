@@ -17,12 +17,28 @@ class UserAppShell extends StatefulWidget {
 }
 
 class _UserAppShellState extends State<UserAppShell> {
+  final GlobalKey<AlertsFlowNavigatorState> _alertsNavigatorKey = GlobalKey<AlertsFlowNavigatorState>();
   int _currentIndex = 0;
 
   void _onTabTapped(int index) {
-    if (_currentIndex == index) return;
+    if (_currentIndex == index) {
+      if (index == 2) {
+        _alertsNavigatorKey.currentState?.showList();
+      }
+      return;
+    }
     setState(() {
       _currentIndex = index;
+    });
+  }
+
+  void openAlertDetail(String alertId) {
+    setState(() {
+      _currentIndex = 2;
+    });
+    // Need a tiny delay for navigator to be built if it was offstage or not initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _alertsNavigatorKey.currentState?.openAlertDetail(alertId);
     });
   }
 
@@ -44,11 +60,14 @@ class _UserAppShellState extends State<UserAppShell> {
         body: IndexedStack(
           index: _currentIndex,
           children: [
-            UserDashboardScreen(onSelectTab: _onTabTapped),
+            UserDashboardScreen(
+              onSelectTab: _onTabTapped,
+              onAlertTap: openAlertDetail,
+            ),
             // Screen 08 — Stations nested flow
             const StationsFlowNavigator(),
             // Screen 09 — Alerts nested flow
-            const AlertsFlowNavigator(),
+            AlertsFlowNavigator(key: _alertsNavigatorKey),
             const PendingFeatureTab(
               title: 'Reports',
               icon: Icons.insert_chart_outlined,

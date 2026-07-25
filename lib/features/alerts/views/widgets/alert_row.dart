@@ -71,12 +71,24 @@ class AlertRow extends StatelessWidget {
                   _buildStatusBadge(),
                 ],
               ),
-              if (onResolve != null || onSnooze != null) ...[
+              if (onResolve != null || onSnooze != null || alert.snoozedUntil != null) ...[
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (onSnooze != null)
+                    if (alert.snoozedUntil != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Text(
+                          'Snoozed until ${_formatTime(alert.snoozedUntil!)}',
+                          style: AppTypography.manropeRegular.copyWith(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      )
+                    else if (onSnooze != null)
                       TextButton(
                         onPressed: onSnooze,
                         style: TextButton.styleFrom(
@@ -84,16 +96,28 @@ class AlertRow extends StatelessWidget {
                         ),
                         child: const Text('Snooze'),
                       ),
-                    if (onSnooze != null && onResolve != null)
+                    if (onResolve != null && alert.snoozedUntil == null && onSnooze != null)
                       const SizedBox(width: 8),
                     if (onResolve != null)
-                      ElevatedButton(
+                      ElevatedButton.icon(
                         onPressed: onResolve,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryBlue,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: AppColors.primaryBlue.withValues(alpha: 0.5),
+                          disabledForegroundColor: Colors.white.withValues(alpha: 0.8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           minimumSize: const Size(0, 36),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
                         ),
-                        child: const Text('Resolve'),
+                        icon: const Icon(Icons.check, size: 16, color: Colors.white),
+                        label: Text(
+                          'Resolve',
+                          style: AppTypography.manropeSemiBold.copyWith(fontSize: 13, color: Colors.white),
+                        ),
                       ),
                   ],
                 ),
@@ -136,7 +160,7 @@ class AlertRow extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(iconData, color: color, size: 20),
@@ -151,22 +175,22 @@ class AlertRow extends StatelessWidget {
     switch (alert.status) {
       case AlertStatus.open:
         text = 'Open';
-        bgColor = AppColors.criticalRed.withOpacity(0.1);
+        bgColor = AppColors.criticalRed.withValues(alpha: 0.1);
         textColor = AppColors.criticalRed;
         break;
       case AlertStatus.pending:
         text = 'Pending';
-        bgColor = AppColors.warningAmber.withOpacity(0.1);
+        bgColor = AppColors.warningAmber.withValues(alpha: 0.1);
         textColor = AppColors.warningAmber;
         break;
       case AlertStatus.inReview:
         text = 'In review';
-        bgColor = AppColors.primaryBlue.withOpacity(0.1);
+        bgColor = AppColors.primaryBlue.withValues(alpha: 0.1);
         textColor = AppColors.primaryBlue;
         break;
       case AlertStatus.resolved:
         text = 'Resolved';
-        bgColor = AppColors.successGreen.withOpacity(0.1);
+        bgColor = AppColors.successGreen.withValues(alpha: 0.1);
         textColor = AppColors.successGreen;
         break;
       case AlertStatus.dismissed:

@@ -19,12 +19,7 @@ import '../widgets/facility_map_card.dart';
 import '../widgets/metric_summary_grid.dart';
 import '../widgets/admin_quick_actions_card.dart';
 import '../widgets/dashboard_alert_card.dart';
-import '../../alerts/view_models/alert_detail_view_model.dart';
-import '../../alerts/views/alert_detail_screen.dart';
-import '../../../domain/repositories/alert_repository.dart';
-import '../../../domain/repositories/station_repository.dart';
-import '../../../app/state/app_session_controller.dart';
-import '../../../app/state/active_facility_controller.dart';
+
 import '../widgets/species_breakdown_card.dart';
 import '../widgets/admin_overview_card.dart';
 import '../widgets/health_summary_card.dart';
@@ -34,8 +29,9 @@ import '../widgets/pending_user_requests_card.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final void Function(int tabIndex, {AdminAlertListPreset preset}) onSelectTab;
+  final ValueChanged<String>? onAlertTap;
 
-  const AdminDashboardScreen({super.key, required this.onSelectTab});
+  const AdminDashboardScreen({super.key, required this.onSelectTab, this.onAlertTap});
 
   @override
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
@@ -446,23 +442,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       widget.onSelectTab(2, preset: AdminAlertListPreset.all);
                     },
                     onAlertTap: (alertId) {
-                      // Pushing over the shell for dashboard alert navigation
-                      Navigator.of(context, rootNavigator: true).push(
-                        MaterialPageRoute(
-                          builder: (ctx) {
-                            return ChangeNotifierProvider(
-                              create: (_) => AlertDetailViewModel(
-                                alertId: alertId,
-                                alertRepository: ctx.read<AlertRepository>(),
-                                stationRepository: ctx.read<StationRepository>(),
-                                sessionController: ctx.read<AppSessionController>(),
-                                activeFacilityController: ctx.read<ActiveFacilityController>(),
-                              ),
-                              child: const AlertDetailScreen(),
-                            );
-                          },
-                        ),
-                      );
+                      if (widget.onAlertTap != null) {
+                        widget.onAlertTap!(alertId);
+                      }
                     },
                   ),
 

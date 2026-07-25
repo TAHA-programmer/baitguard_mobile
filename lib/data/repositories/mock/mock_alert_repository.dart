@@ -79,9 +79,11 @@ class MockAlertRepository implements AlertRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
     final alert = await getAlertById(alertId);
+    final techName = technicianId == 'tech_1' ? 'Ahmed Khan' : (technicianId == 'tech_2' ? 'Sarah Jenkins' : 'Technician');
     return _dataSource.updateAlert(
       alert.copyWith(
-        assignedTechnicianId: technicianId,
+        assignedTechnicianId: techName,
+        status: AlertStatus.inReview,
       ),
     );
   }

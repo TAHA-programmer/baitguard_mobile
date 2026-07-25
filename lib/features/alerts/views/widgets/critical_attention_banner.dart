@@ -22,9 +22,9 @@ class CriticalAttentionBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.criticalRed.withOpacity(0.1),
+          color: AppColors.criticalRed.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.criticalRed.withOpacity(0.3)),
+          border: Border.all(color: AppColors.criticalRed.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [

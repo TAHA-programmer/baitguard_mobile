@@ -11,6 +11,7 @@ import 'widgets/alert_severity_summary_card.dart';
 import 'widgets/alert_row.dart';
 import 'widgets/critical_attention_banner.dart';
 import 'widgets/hotspot_station_row.dart';
+import '../../../core/widgets/app_top_toast.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -20,9 +21,98 @@ class AlertsScreen extends StatefulWidget {
 }
 
 class _AlertsScreenState extends State<AlertsScreen> {
+  int _lastRefreshErrorEventId = 0;
+  int _lastActionSuccessEventId = 0;
+  int _lastActionErrorEventId = 0;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AlertsViewModel>().addListener(_onViewModelChange);
+      }
+    });
+  }
+
+  void _onViewModelChange() {
+    if (!mounted) return;
+    final vm = context.read<AlertsViewModel>();
+
+    if (vm.refreshErrorEventId > _lastRefreshErrorEventId) {
+      _lastRefreshErrorEventId = vm.refreshErrorEventId;
+      if (vm.refreshErrorMessage != null) {
+        _showToast(vm.refreshErrorMessage!, isError: true);
+      }
+    }
+
+    if (vm.actionErrorEventId > _lastActionErrorEventId) {
+      _lastActionErrorEventId = vm.actionErrorEventId;
+      if (vm.actionErrorMessage != null) {
+        _showToast(vm.actionErrorMessage!, isError: true);
+      }
+    }
+
+    if (vm.actionSuccessEventId > _lastActionSuccessEventId) {
+      _lastActionSuccessEventId = vm.actionSuccessEventId;
+      if (vm.actionSuccessMessage != null) {
+        _showToast(vm.actionSuccessMessage!, isError: false);
+      }
+    }
+  }
+
+  void _showToast(String message, {bool isError = false}) {
+    AppTopToast.show(context, message);
+  }
+
+  Future<void> _confirmResolve(AlertsViewModel vm, Alert alert) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Resolve Alert'),
+        content: Text('Are you sure you want to resolve alert ${alert.id}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
+            child: const Text('Resolve'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      vm.resolveAlert(alert.id);
+    }
+  }
+
+  Future<void> _confirmSnooze(AlertsViewModel vm, Alert alert) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Snooze Alert'),
+        content: Text('Snooze alert ${alert.id} for 1 hour?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
+            child: const Text('Snooze'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      vm.snoozeAlert(alert.id, DateTime.now().add(const Duration(hours: 1)));
+    }
   }
 
   @override
@@ -63,27 +153,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       );
     }
 
-    if (vm.refreshError != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(vm.refreshError!),
-            backgroundColor: AppColors.criticalRed,
-          ),
-        );
-      });
-    }
-    
-    if (vm.actionErrorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(vm.actionErrorMessage!),
-            backgroundColor: AppColors.criticalRed,
-          ),
-        );
-      });
-    }
+
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -273,13 +343,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 
   String _getPrimarySectionTitle(AlertListFilter filter) {
-    switch (filter) {
-      case AlertListFilter.all: return 'Today';
-      case AlertListFilter.rodent: return 'Rodent';
-      case AlertListFilter.lowBait: return 'Low bait';
-      case AlertListFilter.tamper: return 'Tamper';
-      case AlertListFilter.offline: return 'Offline';
-    }
+    return 'Today';
   }
 
   Widget _buildAlertSection(BuildContext context, {required String title, required List<Alert> alerts, required AlertsViewModel vm}) {
@@ -311,10 +375,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 Navigator.of(context).pushNamed('/alert-detail', arguments: alert.id);
               },
               onResolve: vm.permissions?.canResolve == true && alert.status != AlertStatus.resolved && alert.status != AlertStatus.dismissed
-                  ? () => vm.resolveAlert(alert.id)
+                  ? () => _confirmResolve(vm, alert)
                   : null,
               onSnooze: vm.permissions?.canSnooze == true && alert.status != AlertStatus.resolved && alert.status != AlertStatus.dismissed
-                  ? () => vm.snoozeAlert(alert.id, DateTime.now().add(const Duration(hours: 1)))
+                  ? () => _confirmSnooze(vm, alert)
                   : null,
             );
           },
@@ -370,14 +434,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       final idx = value.toInt();
                       if (idx >= 0 && idx < activity.length) {
                         final date = activity[idx].day;
-                        final isFirstOrLast = idx == 0 || idx == activity.length - 1;
-                        if (!isFirstOrLast && idx % 2 != 0) return const SizedBox.shrink();
+                        final weekday = const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][date.weekday - 1];
                         return Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
+                          padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            '${date.month}/${date.day}',
-                            style: AppTypography.manropeBold.copyWith(
-                              fontSize: 11,
+                            weekday,
+                            style: AppTypography.manropeMedium.copyWith(
+                              fontSize: 12,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -404,7 +467,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   dotData: const FlDotData(show: false),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: AppColors.criticalRed.withOpacity(0.1),
+                    color: AppColors.criticalRed.withValues(alpha: 0.1),
                   ),
                 ),
               ],

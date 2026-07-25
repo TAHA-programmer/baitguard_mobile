@@ -7,9 +7,134 @@ import '../../../domain/models/alert_type.dart';
 import '../../../domain/models/alert_status.dart';
 import '../../../domain/models/alert_severity.dart';
 import '../view_models/alert_detail_view_model.dart';
+import '../../../core/widgets/app_top_toast.dart';
 
-class AlertDetailScreen extends StatelessWidget {
+class AlertDetailScreen extends StatefulWidget {
   const AlertDetailScreen({super.key});
+
+  @override
+  State<AlertDetailScreen> createState() => _AlertDetailScreenState();
+}
+
+class _AlertDetailScreenState extends State<AlertDetailScreen> {
+  int _lastRefreshErrorEventId = 0;
+  int _lastActionSuccessEventId = 0;
+  int _lastActionErrorEventId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AlertDetailViewModel>().addListener(_onViewModelChange);
+      }
+    });
+  }
+
+  void _onViewModelChange() {
+    if (!mounted) return;
+    final vm = context.read<AlertDetailViewModel>();
+
+    if (vm.refreshErrorEventId > _lastRefreshErrorEventId) {
+      _lastRefreshErrorEventId = vm.refreshErrorEventId;
+      if (vm.refreshErrorMessage != null) {
+        _showToast(vm.refreshErrorMessage!, isError: true);
+      }
+    }
+
+    if (vm.actionErrorEventId > _lastActionErrorEventId) {
+      _lastActionErrorEventId = vm.actionErrorEventId;
+      if (vm.actionErrorMessage != null) {
+        _showToast(vm.actionErrorMessage!, isError: true);
+      }
+    }
+
+    if (vm.actionSuccessEventId > _lastActionSuccessEventId) {
+      _lastActionSuccessEventId = vm.actionSuccessEventId;
+      if (vm.actionSuccessMessage != null) {
+        _showToast(vm.actionSuccessMessage!, isError: false);
+      }
+    }
+  }
+
+  void _showToast(String message, {bool isError = false}) {
+    AppTopToast.show(context, message);
+  }
+
+  Future<void> _confirmResolve(AlertDetailViewModel vm) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Resolve Alert'),
+        content: Text('Are you sure you want to resolve alert ${vm.alertId}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
+            child: const Text('Resolve'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      vm.resolveAlert();
+    }
+  }
+
+  Future<void> _confirmDismiss(AlertDetailViewModel vm) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Dismiss Alert'),
+        content: Text('Are you sure you want to dismiss alert ${vm.alertId}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.criticalRed, foregroundColor: Colors.white),
+            child: const Text('Dismiss'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      vm.dismissAlert();
+    }
+  }
+
+  Future<void> _confirmSnooze(AlertDetailViewModel vm) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Snooze Alert'),
+        content: Text('Snooze alert ${vm.alertId} for 1 hour?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
+            child: const Text('Snooze'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      vm.snoozeAlert(DateTime.now().add(const Duration(hours: 1)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,38 +174,7 @@ class AlertDetailScreen extends StatelessWidget {
       );
     }
 
-    if (vm.refreshError != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(vm.refreshError!),
-            backgroundColor: AppColors.criticalRed,
-          ),
-        );
-      });
-    }
 
-    if (vm.actionErrorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(vm.actionErrorMessage!),
-            backgroundColor: AppColors.criticalRed,
-          ),
-        );
-      });
-    }
-    
-    if (vm.actionSuccessMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(vm.actionSuccessMessage!),
-            backgroundColor: AppColors.successGreen,
-          ),
-        );
-      });
-    }
 
     final alert = vm.alert;
     final station = vm.station;
@@ -204,22 +298,22 @@ class AlertDetailScreen extends StatelessWidget {
     switch (alert.status) {
       case AlertStatus.open:
         statusText = 'Open';
-        statusBgColor = AppColors.criticalRed.withOpacity(0.1);
+        statusBgColor = AppColors.criticalRed.withValues(alpha: 0.1);
         statusTextColor = AppColors.criticalRed;
         break;
       case AlertStatus.pending:
         statusText = 'Pending';
-        statusBgColor = AppColors.warningAmber.withOpacity(0.1);
+        statusBgColor = AppColors.warningAmber.withValues(alpha: 0.1);
         statusTextColor = AppColors.warningAmber;
         break;
       case AlertStatus.inReview:
         statusText = 'In review';
-        statusBgColor = AppColors.primaryBlue.withOpacity(0.1);
+        statusBgColor = AppColors.primaryBlue.withValues(alpha: 0.1);
         statusTextColor = AppColors.primaryBlue;
         break;
       case AlertStatus.resolved:
         statusText = 'Resolved';
-        statusBgColor = AppColors.successGreen.withOpacity(0.1);
+        statusBgColor = AppColors.successGreen.withValues(alpha: 0.1);
         statusTextColor = AppColors.successGreen;
         break;
       case AlertStatus.dismissed:
@@ -242,7 +336,7 @@ class AlertDetailScreen extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(iconData, color: color, size: 32),
@@ -392,9 +486,10 @@ class AlertDetailScreen extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: vm.isMutating ? null : () => vm.resolveAlert(),
+              onPressed: vm.isMutating ? null : () => _confirmResolve(vm),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryBlue,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -408,9 +503,7 @@ class AlertDetailScreen extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: vm.isMutating ? null : () {
-                vm.snoozeAlert(DateTime.now().add(const Duration(hours: 1)));
-              },
+              onPressed: vm.isMutating ? null : () => _confirmSnooze(vm),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: const BorderSide(color: AppColors.borderSecondary),
@@ -444,7 +537,7 @@ class AlertDetailScreen extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: TextButton(
-              onPressed: vm.isMutating ? null : () => vm.dismissAlert(),
+              onPressed: vm.isMutating ? null : () => _confirmDismiss(vm),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 foregroundColor: AppColors.criticalRed,

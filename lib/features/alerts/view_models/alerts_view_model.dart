@@ -39,26 +39,20 @@ class AlertsViewModel extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  String? _refreshError;
-  String? get refreshError {
-    final e = _refreshError;
-    _refreshError = null; // one-time read
-    return e;
-  }
+  int _refreshErrorEventId = 0;
+  int get refreshErrorEventId => _refreshErrorEventId;
+  String? _refreshErrorMessage;
+  String? get refreshErrorMessage => _refreshErrorMessage;
 
+  int _actionSuccessEventId = 0;
+  int get actionSuccessEventId => _actionSuccessEventId;
   String? _actionSuccessMessage;
-  String? get actionSuccessMessage {
-    final m = _actionSuccessMessage;
-    _actionSuccessMessage = null; // one-time read
-    return m;
-  }
+  String? get actionSuccessMessage => _actionSuccessMessage;
 
+  int _actionErrorEventId = 0;
+  int get actionErrorEventId => _actionErrorEventId;
   String? _actionErrorMessage;
-  String? get actionErrorMessage {
-    final m = _actionErrorMessage;
-    _actionErrorMessage = null; // one-time read
-    return m;
-  }
+  String? get actionErrorMessage => _actionErrorMessage;
 
   List<Alert> _allAlerts = [];
   List<Station> _allStations = [];
@@ -139,7 +133,8 @@ class AlertsViewModel extends ChangeNotifier {
       _allAlerts = newAlerts;
       _lastLoadedSiteId = siteId;
     } catch (e) {
-      _refreshError = 'Failed to refresh alerts: $e';
+      _refreshErrorMessage = 'Failed to refresh alerts: $e';
+      _refreshErrorEventId++;
     } finally {
       notifyListeners();
     }
@@ -270,8 +265,10 @@ class AlertsViewModel extends ChangeNotifier {
       );
       _updateLocalAlert(updatedAlert);
       _actionSuccessMessage = 'Alert resolved successfully.';
+      _actionSuccessEventId++;
     } catch (e) {
       _actionErrorMessage = 'Failed to resolve alert: $e';
+      _actionErrorEventId++;
     } finally {
       _mutatingAlertIds.remove(alertId);
       notifyListeners();
@@ -291,9 +288,11 @@ class AlertsViewModel extends ChangeNotifier {
         until: until,
       );
       _updateLocalAlert(updatedAlert);
-      _actionSuccessMessage = 'Alert snoozed.';
+      _actionSuccessMessage = 'Alert snoozed for 1 hour.';
+      _actionSuccessEventId++;
     } catch (e) {
       _actionErrorMessage = 'Failed to snooze alert: $e';
+      _actionErrorEventId++;
     } finally {
       _mutatingAlertIds.remove(alertId);
       notifyListeners();
@@ -314,8 +313,10 @@ class AlertsViewModel extends ChangeNotifier {
       );
       _updateLocalAlert(updatedAlert);
       _actionSuccessMessage = 'Alert assigned to technician.';
+      _actionSuccessEventId++;
     } catch (e) {
       _actionErrorMessage = 'Failed to assign technician: $e';
+      _actionErrorEventId++;
     } finally {
       _mutatingAlertIds.remove(alertId);
       notifyListeners();
@@ -338,8 +339,10 @@ class AlertsViewModel extends ChangeNotifier {
       );
       _updateLocalAlert(updatedAlert);
       _actionSuccessMessage = 'Alert dismissed.';
+      _actionSuccessEventId++;
     } catch (e) {
       _actionErrorMessage = 'Failed to dismiss alert: $e';
+      _actionErrorEventId++;
     } finally {
       _mutatingAlertIds.remove(alertId);
       notifyListeners();

@@ -18,11 +18,17 @@ class AdminAppShell extends StatefulWidget {
 }
 
 class _AdminAppShellState extends State<AdminAppShell> {
+  final GlobalKey<AlertsFlowNavigatorState> _alertsNavigatorKey = GlobalKey<AlertsFlowNavigatorState>();
   int _currentIndex = 0;
   AdminAlertListPreset _alertPreset = AdminAlertListPreset.all;
 
   void _onTabTapped(int index) {
-    if (_currentIndex == index) return;
+    if (_currentIndex == index) {
+      if (index == 2) {
+        _alertsNavigatorKey.currentState?.showList(preset: AdminAlertListPreset.all);
+      }
+      return;
+    }
     setState(() {
       _currentIndex = index;
       if (index == 2) {
@@ -42,6 +48,21 @@ class _AdminAppShellState extends State<AdminAppShell> {
       if (index == 2) {
         _alertPreset = preset;
       }
+    });
+    // Need a tiny delay for navigator to be built if it was offstage or not initialized
+    if (index == 2) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _alertsNavigatorKey.currentState?.showList(preset: preset);
+      });
+    }
+  }
+
+  void openAlertDetail(String alertId) {
+    setState(() {
+      _currentIndex = 2;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _alertsNavigatorKey.currentState?.openAlertDetail(alertId);
     });
   }
 
@@ -63,11 +84,17 @@ class _AdminAppShellState extends State<AdminAppShell> {
         body: IndexedStack(
           index: _currentIndex,
           children: [
-            AdminDashboardScreen(onSelectTab: switchTab),
+            AdminDashboardScreen(
+              onSelectTab: switchTab,
+              onAlertTap: openAlertDetail,
+            ),
             // Screen 08 — Stations nested flow
             const StationsFlowNavigator(),
             // Screen 09 — Alerts nested flow
-            AlertsFlowNavigator(initialPreset: _alertPreset),
+            AlertsFlowNavigator(
+              key: _alertsNavigatorKey,
+              initialPreset: _alertPreset,
+            ),
             const PendingFeatureTab(
               title: 'Reports',
               icon: Icons.insert_chart_outlined,

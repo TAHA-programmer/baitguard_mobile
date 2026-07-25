@@ -14,18 +14,14 @@ import '../widgets/health_summary_card.dart';
 import '../widgets/metric_summary_grid.dart';
 import '../widgets/quick_actions_card.dart';
 import '../widgets/dashboard_alert_card.dart';
-import '../../alerts/view_models/alert_detail_view_model.dart';
-import '../../alerts/views/alert_detail_screen.dart';
-import '../../../domain/repositories/alert_repository.dart';
-import '../../../domain/repositories/station_repository.dart';
-import '../../../app/state/app_session_controller.dart';
-import '../../../app/state/active_facility_controller.dart';
+
 import '../widgets/species_breakdown_card.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   final ValueChanged<int> onSelectTab;
+  final ValueChanged<String>? onAlertTap;
 
-  const UserDashboardScreen({super.key, required this.onSelectTab});
+  const UserDashboardScreen({super.key, required this.onSelectTab, this.onAlertTap});
 
   @override
   State<UserDashboardScreen> createState() => _UserDashboardScreenState();
@@ -289,23 +285,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                     alerts: data.recentAlerts,
                     onSeeAll: () => widget.onSelectTab(2),
                     onAlertTap: (alertId) {
-                      // Pushing over the shell for dashboard alert navigation
-                      Navigator.of(context, rootNavigator: true).push(
-                        MaterialPageRoute(
-                          builder: (ctx) {
-                            return ChangeNotifierProvider(
-                              create: (_) => AlertDetailViewModel(
-                                alertId: alertId,
-                                alertRepository: ctx.read<AlertRepository>(),
-                                stationRepository: ctx.read<StationRepository>(),
-                                sessionController: ctx.read<AppSessionController>(),
-                                activeFacilityController: ctx.read<ActiveFacilityController>(),
-                              ),
-                              child: const AlertDetailScreen(),
-                            );
-                          },
-                        ),
-                      );
+                      if (widget.onAlertTap != null) {
+                        widget.onAlertTap!(alertId);
+                      }
                     },
                   ),
                   const SizedBox(

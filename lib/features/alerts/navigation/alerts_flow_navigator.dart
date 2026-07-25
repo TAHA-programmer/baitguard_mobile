@@ -21,10 +21,10 @@ class AlertsFlowNavigator extends StatefulWidget {
   });
 
   @override
-  State<AlertsFlowNavigator> createState() => _AlertsFlowNavigatorState();
+  State<AlertsFlowNavigator> createState() => AlertsFlowNavigatorState();
 }
 
-class _AlertsFlowNavigatorState extends State<AlertsFlowNavigator> {
+class AlertsFlowNavigatorState extends State<AlertsFlowNavigator> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late AlertsViewModel _alertsViewModel;
 
@@ -56,6 +56,16 @@ class _AlertsFlowNavigatorState extends State<AlertsFlowNavigator> {
   void dispose() {
     _alertsViewModel.dispose();
     super.dispose();
+  }
+
+  void openAlertDetail(String alertId) {
+    _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+    _navigatorKey.currentState?.pushNamed('/alert-detail', arguments: alertId);
+  }
+
+  void showList({AdminAlertListPreset preset = AdminAlertListPreset.all}) {
+    _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+    _alertsViewModel.applyPreset(preset);
   }
 
   @override
