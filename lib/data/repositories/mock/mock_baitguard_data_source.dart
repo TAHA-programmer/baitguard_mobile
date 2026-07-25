@@ -7,6 +7,7 @@ import '../../../domain/models/alert_type.dart';
 import '../../../domain/models/app_user.dart';
 import '../../../domain/models/detected_species.dart';
 import '../../../domain/models/detection_event.dart';
+import '../../../domain/models/register_station_request.dart';
 import '../../../domain/models/site.dart';
 import '../../../domain/models/station.dart';
 import '../../../domain/models/station_status.dart';
@@ -499,10 +500,38 @@ class MockBaitGuardDataSource {
   Station setStationNotificationsMuted(String stationId, bool muted) {
     final index = _stations.indexWhere((s) => s.id == stationId);
     if (index == -1) {
-      throw StateError('Station not found: $stationId');
+      throw StateError('Station $stationId not found.');
     }
     final updated = _stations[index].copyWith(notificationsMuted: muted);
     _stations[index] = updated;
     return updated;
+  }
+
+  Station registerStation(RegisterStationRequest request) {
+    if (_stations.any(
+      (s) => s.id.toLowerCase() == request.stationId.toLowerCase(),
+    )) {
+      throw StateError('Station with ID ${request.stationId} already exists.');
+    }
+
+    final newStation = Station(
+      id: request.stationId,
+      name: request.stationName,
+      siteId: request.siteId,
+      locationDescription: request.zoneLocation,
+      status: StationStatus.online,
+      baitPercentage: 100.0,
+      batteryPercentage: 100.0,
+      temperature: 22.0,
+      humidity: 50.0,
+      isTampered: false,
+      lastSeen: DateTime.now(),
+      hasCamera: true, // As requested in the prompt
+      lastRefilledAt: DateTime.now(),
+      notificationsMuted: false,
+    );
+
+    _stations.add(newStation);
+    return newStation;
   }
 }

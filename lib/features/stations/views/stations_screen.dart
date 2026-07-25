@@ -213,10 +213,7 @@ class _StationsScreenState extends State<StationsScreen> {
           ),
           if (vm.permissions.canAddStation)
             GestureDetector(
-              onTap: () => AppTopToast.show(
-                context,
-                'Station setup will be available shortly.',
-              ),
+              onTap: () => Navigator.of(context).pushNamed('/add'),
               child: Container(
                 width: 40,
                 height: 40,
@@ -428,18 +425,15 @@ class _StationsScreenState extends State<StationsScreen> {
   // ── Interaction handlers ──────────────────────────────────────────────────────
 
   void _onStationTap(BuildContext context, String stationId) {
-    AppTopToast.show(context, 'Station details will be available shortly.');
+    Navigator.of(context).pushNamed('/detail/$stationId');
   }
 
   void _onCameraTap(BuildContext context, String stationId) {
-    AppTopToast.show(context, 'Station details will be available shortly.');
+    Navigator.of(context).pushNamed('/detail/$stationId');
   }
 
   void _onViewHistory(BuildContext context, String stationId) {
-    AppTopToast.show(
-      context,
-      'Station activity history will be available shortly.',
-    );
+    Navigator.of(context).pushNamed('/detail/$stationId');
   }
 
   void _onLocate(BuildContext context, String stationId) {

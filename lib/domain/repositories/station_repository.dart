@@ -1,5 +1,6 @@
 import '../models/station.dart';
 import '../models/detection_event.dart';
+import '../models/register_station_request.dart';
 
 abstract class StationRepository {
   Future<List<Station>> getStations({String? siteId});
@@ -25,4 +26,10 @@ abstract class StationRepository {
     required String stationId,
     required bool muted,
   });
+
+  /// Registers a new station.
+  ///
+  /// Persists the station via the provided data source.
+  /// Throws if a station with the same ID already exists.
+  Future<Station> registerStation(RegisterStationRequest request);
 }

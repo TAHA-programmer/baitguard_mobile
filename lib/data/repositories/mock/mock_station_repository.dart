@@ -1,6 +1,7 @@
 import '../../../domain/models/station.dart';
 import '../../../domain/models/station_status.dart';
 import '../../../domain/models/detection_event.dart';
+import '../../../domain/models/register_station_request.dart';
 import '../../../domain/repositories/station_repository.dart';
 import 'mock_baitguard_data_source.dart';
 
@@ -49,6 +50,12 @@ class MockStationRepository implements StationRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return _dataSource.setStationNotificationsMuted(stationId, muted);
+  }
+
+  @override
+  Future<Station> registerStation(RegisterStationRequest request) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return _dataSource.registerStation(request);
   }
 }
 

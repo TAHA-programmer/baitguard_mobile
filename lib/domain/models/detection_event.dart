@@ -1,5 +1,7 @@
 import 'detected_species.dart';
 
+enum DetectionEventStatus { open, pending, resolved }
+
 class DetectionEvent {
   final String id;
   final String stationId;
@@ -7,6 +9,7 @@ class DetectionEvent {
   final DetectedSpecies species;
   final double confidenceScore;
   final String? evidenceImageUrl;
+  final DetectionEventStatus status;
 
   const DetectionEvent({
     required this.id,
@@ -15,5 +18,6 @@ class DetectionEvent {
     required this.species,
     required this.confidenceScore,
     this.evidenceImageUrl,
+    this.status = DetectionEventStatus.open,
   });
 }
