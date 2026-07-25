@@ -1,0 +1,71 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../dashboard/view_models/user_dashboard_view_model.dart';
+import '../../dashboard/views/user_dashboard_screen.dart';
+import '../widgets/authenticated_bottom_navigation.dart';
+import 'pending_feature_tab.dart';
+
+class UserAppShell extends StatefulWidget {
+  const UserAppShell({super.key});
+
+  @override
+  State<UserAppShell> createState() => _UserAppShellState();
+}
+
+class _UserAppShellState extends State<UserAppShell> {
+  int _currentIndex = 0;
+
+  void _onTabTapped(int index) {
+    if (_currentIndex == index) return;
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unreadAlertCount = context.select<UserDashboardViewModel, int>(
+      (vm) => vm.data?.unreadAlertCount ?? 0,
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            UserDashboardScreen(onSelectTab: _onTabTapped),
+            const PendingFeatureTab(
+              title: 'Stations',
+              icon: Icons.place_outlined,
+              message: 'Station monitoring will be available here shortly.',
+            ),
+            const PendingFeatureTab(
+              title: 'Alerts',
+              icon: Icons.notifications_outlined,
+              message: 'Alert management will be available here shortly.',
+            ),
+            const PendingFeatureTab(
+              title: 'Reports',
+              icon: Icons.insert_chart_outlined,
+              message: 'Reporting tools will be available here shortly.',
+            ),
+          ],
+        ),
+        bottomNavigationBar: AuthenticatedBottomNavigation(
+          selectedIndex: _currentIndex,
+          unreadAlertCount: unreadAlertCount,
+          onSelected: _onTabTapped,
+        ),
+      ),
+    );
+  }
+}

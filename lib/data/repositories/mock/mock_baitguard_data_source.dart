@@ -1,0 +1,366 @@
+import '../../../domain/models/access_request.dart';
+import '../../../domain/models/access_request_record.dart';
+import '../../../domain/models/alert.dart';
+import '../../../domain/models/alert_severity.dart';
+import '../../../domain/models/alert_status.dart';
+import '../../../domain/models/alert_type.dart';
+import '../../../domain/models/app_user.dart';
+import '../../../domain/models/site.dart';
+import '../../../domain/models/station.dart';
+import '../../../domain/models/station_status.dart';
+import '../../../domain/models/user_role.dart';
+import 'mock_deployment_snapshot.dart';
+
+class MockBaitGuardDataSource {
+  final MockDeploymentSnapshot deploymentSnapshot;
+
+  final List<Site> _sites = [];
+  final List<AppUser> _users = [];
+  final List<Station> _stations = [];
+  final List<Alert> _alerts = [];
+  final List<AccessRequestRecord> _accessRequests = [];
+
+  int _nextAccessRequestNumber = 1;
+
+  MockBaitGuardDataSource({
+    required this.deploymentSnapshot,
+    List<Site>? sites,
+    List<AppUser>? users,
+    List<Station>? stations,
+    List<Alert>? alerts,
+    List<AccessRequestRecord>? accessRequests,
+  }) {
+    if (sites != null) _sites.addAll(sites);
+    if (users != null) _users.addAll(users);
+    if (stations != null) _stations.addAll(stations);
+    if (alerts != null) _alerts.addAll(alerts);
+    if (accessRequests != null) _accessRequests.addAll(accessRequests);
+
+    int highestReqId = 0;
+    for (final req in _accessRequests) {
+      if (req.id.startsWith('req_')) {
+        final numPart = int.tryParse(req.id.substring(4));
+        if (numPart != null && numPart > highestReqId) {
+          highestReqId = numPart;
+        }
+      }
+    }
+    _nextAccessRequestNumber = highestReqId + 1;
+  }
+
+  factory MockBaitGuardDataSource.seeded({DateTime? referenceTime}) {
+    final now = referenceTime ?? DateTime.now();
+    return MockBaitGuardDataSource(
+      deploymentSnapshot: MockDeploymentSnapshot.seeded(referenceTime: now),
+      sites: const [
+        Site(id: 'site_1', name: 'Warehouse A', location: 'North District'),
+        Site(id: 'site_2', name: 'Warehouse B', location: 'North District'),
+        Site(
+          id: 'site_3',
+          name: 'Distribution Center',
+          location: 'East District',
+        ),
+        Site(id: 'site_4', name: 'Cold Storage', location: 'South District'),
+        Site(
+          id: 'site_5',
+          name: 'Manufacturing Plant',
+          location: 'West District',
+        ),
+      ],
+      users: [
+        AppUser(
+          id: 'admin_1',
+          name: 'Alex Rivera',
+          email: 'admin@baitguard.com',
+          role: UserRole.admin,
+          isActive: true,
+          siteAccessIds: ['site_1', 'site_2', 'site_3', 'site_4', 'site_5'],
+        ),
+        AppUser(
+          id: 'viewer_1',
+          name: 'Alex Rivera',
+          email: 'user@baitguard.com',
+          role: UserRole.viewer,
+          isActive: true,
+          siteAccessIds: ['site_1'],
+        ),
+        AppUser(
+          id: 'tech_1',
+          name: 'Ahmed Khan',
+          email: 'technician@baitguard.com',
+          role: UserRole.technician,
+          isActive: true,
+          siteAccessIds: ['site_1'],
+        ),
+        AppUser(
+          id: 'inactive_1',
+          name: 'Inactive User',
+          email: 'inactive@baitguard.com',
+          role: UserRole.viewer,
+          isActive: false,
+          siteAccessIds: [],
+        ),
+      ],
+      stations: [
+        Station(
+          id: 'RB-01',
+          name: 'RB-01 — Kitchen area',
+          siteId: 'site_1',
+          locationDescription: 'Kitchen area',
+          status: StationStatus.online,
+          baitPercentage: 60.0,
+          batteryPercentage: 95.0,
+          temperature: 24.0,
+          humidity: 40.0,
+          isTampered: false,
+          lastSeen: now.subtract(const Duration(minutes: 2)),
+        ),
+        Station(
+          id: 'RB-03',
+          name: 'RB-03 — Cold storage',
+          siteId: 'site_1',
+          locationDescription: 'Cold storage',
+          status: StationStatus.lowBait,
+          baitPercentage: 18.0,
+          batteryPercentage: 85.0,
+          temperature: 4.5,
+          humidity: 55.0,
+          isTampered: false,
+          lastSeen: now.subtract(const Duration(minutes: 15)),
+        ),
+        Station(
+          id: 'RB-05',
+          name: 'RB-05 — Loading bay',
+          siteId: 'site_1',
+          locationDescription: 'Loading bay',
+          status: StationStatus.online,
+          baitPercentage: 45.0,
+          batteryPercentage: 80.0,
+          temperature: 22.0,
+          humidity: 50.0,
+          isTampered: false,
+          lastSeen: now.subtract(const Duration(minutes: 3)),
+        ),
+        Station(
+          id: 'RB-07',
+          name: 'RB-07 — Warehouse B',
+          siteId: 'site_1',
+          locationDescription: 'Warehouse B',
+          status: StationStatus.alert,
+          baitPercentage: 75.0,
+          batteryPercentage: 90.0,
+          temperature: 22.5,
+          humidity: 45.0,
+          isTampered: false,
+          lastSeen: now.subtract(const Duration(minutes: 5)),
+        ),
+        Station(
+          id: 'RB-08',
+          name: 'RB-08 — East corridor',
+          siteId: 'site_1',
+          locationDescription: 'East corridor',
+          status: StationStatus.online,
+          baitPercentage: 50.0,
+          batteryPercentage: 70.0,
+          temperature: 22.0,
+          humidity: 48.0,
+          isTampered: false,
+          lastSeen: now.subtract(const Duration(minutes: 8)),
+        ),
+        Station(
+          id: 'RB-09',
+          name: 'RB-09 — Parking lot',
+          siteId: 'site_1',
+          locationDescription: 'Parking lot',
+          status: StationStatus.offline,
+          baitPercentage: 0.0,
+          batteryPercentage: 0.0,
+          temperature: 0.0,
+          humidity: 0.0,
+          isTampered: false,
+          lastSeen: now.subtract(const Duration(hours: 48)),
+        ),
+        Station(
+          id: 'RB-10',
+          name: 'RB-10 — Utility Room',
+          siteId: 'site_1',
+          locationDescription: 'Utility Room',
+          status: StationStatus.alert,
+          baitPercentage: 85.0,
+          batteryPercentage: 92.0,
+          temperature: 21.5,
+          humidity: 42.0,
+          isTampered: false,
+          lastSeen: now.subtract(const Duration(minutes: 12)),
+        ),
+        Station(
+          id: 'RB-11',
+          name: 'RB-11 — Break Room',
+          siteId: 'site_1',
+          locationDescription: 'Break Room',
+          status: StationStatus.lowBait,
+          baitPercentage: 22.0,
+          batteryPercentage: 88.0,
+          temperature: 23.0,
+          humidity: 46.0,
+          isTampered: false,
+          lastSeen: now.subtract(const Duration(minutes: 18)),
+        ),
+        Station(
+          id: 'RB-12',
+          name: 'RB-12 — Main entrance',
+          siteId: 'site_1',
+          locationDescription: 'Main entrance',
+          status: StationStatus.alert,
+          baitPercentage: 95.0,
+          batteryPercentage: 99.0,
+          temperature: 21.0,
+          humidity: 50.0,
+          isTampered: true,
+          lastSeen: now.subtract(const Duration(hours: 24)),
+        ),
+      ],
+      alerts: [
+        Alert(
+          id: 'alert_1',
+          stationId: 'RB-07',
+          type: AlertType.rodent,
+          severity: AlertSeverity.critical,
+          status: AlertStatus.open,
+          timestamp: DateTime(now.year, now.month, now.day, 2, 13),
+          description: 'Rat detected',
+        ),
+        Alert(
+          id: 'alert_2',
+          stationId: 'RB-03',
+          type: AlertType.lowBait,
+          severity: AlertSeverity.warning,
+          status: AlertStatus.pending,
+          timestamp: DateTime(now.year, now.month, now.day, 11, 45),
+          description: 'Low bait (18%)',
+        ),
+        Alert(
+          id: 'alert_3',
+          stationId: 'RB-12',
+          type: AlertType.tamper,
+          severity: AlertSeverity.critical,
+          status: AlertStatus.open,
+          timestamp: now.subtract(const Duration(hours: 24)),
+          description: 'Tamper detected',
+        ),
+        Alert(
+          id: 'alert_4',
+          stationId: 'RB-09',
+          type: AlertType.stationOffline,
+          severity: AlertSeverity.info,
+          status: AlertStatus.inReview,
+          timestamp: now.subtract(const Duration(hours: 48)),
+          description: 'Station offline',
+        ),
+        Alert(
+          id: 'alert_5',
+          stationId: 'RB-10',
+          type: AlertType.rodent,
+          severity: AlertSeverity.critical,
+          status: AlertStatus.open,
+          timestamp: now.subtract(const Duration(minutes: 12)),
+          description: 'Mouse detected',
+        ),
+        Alert(
+          id: 'alert_6',
+          stationId: 'RB-11',
+          type: AlertType.lowBait,
+          severity: AlertSeverity.warning,
+          status: AlertStatus.open,
+          timestamp: now.subtract(const Duration(minutes: 18)),
+          description: 'Low bait (22%)',
+        ),
+      ],
+      accessRequests: [
+        AccessRequestRecord(
+          id: 'req_0001',
+          request: AccessRequest(
+            fullName: 'Jane Doe',
+            email: 'jane@baitguard.com',
+            company: 'BaitGuard',
+            phone: '555-0101',
+            department: 'Need admin access',
+            submittedAt: now,
+          ),
+          status: AccessRequestStatus.pending,
+        ),
+        AccessRequestRecord(
+          id: 'req_0002',
+          request: AccessRequest(
+            fullName: 'John Smith',
+            email: 'john@baitguard.com',
+            company: 'BaitGuard',
+            phone: '555-0102',
+            department: 'Technician role for Site 2',
+            submittedAt: now,
+          ),
+          status: AccessRequestStatus.pending,
+        ),
+        AccessRequestRecord(
+          id: 'req_0003',
+          request: AccessRequest(
+            fullName: 'Mike Johnson',
+            email: 'mike@baitguard.com',
+            company: 'BaitGuard',
+            phone: '555-0103',
+            department: 'Viewer access required',
+            submittedAt: now.subtract(const Duration(days: 1)),
+          ),
+          status: AccessRequestStatus.pending,
+        ),
+      ],
+    );
+  }
+
+  // Expose unmodifiable views
+  List<Site> get sites => List.unmodifiable(_sites);
+  List<AppUser> get users => List.unmodifiable(_users);
+  List<Station> get stations => List.unmodifiable(_stations);
+  List<Alert> get alerts => List.unmodifiable(_alerts);
+  List<AccessRequestRecord> get accessRequests =>
+      List.unmodifiable(_accessRequests);
+
+  // Authentication matching
+  AppUser? authenticate(String email, String password) {
+    final normalizedEmail = email.trim().toLowerCase();
+
+    // Explicit hardcoded password check for mock accounts
+    String? expectedPassword;
+    if (normalizedEmail == 'admin@baitguard.com') {
+      expectedPassword = 'admin123';
+    } else if (normalizedEmail == 'user@baitguard.com' ||
+        normalizedEmail == 'inactive@baitguard.com') {
+      expectedPassword = 'user123';
+    } else if (normalizedEmail == 'technician@baitguard.com') {
+      expectedPassword = 'tech123';
+    }
+
+    if (expectedPassword == null || password != expectedPassword) {
+      return null;
+    }
+
+    try {
+      return _users.firstWhere((u) => u.email.toLowerCase() == normalizedEmail);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Mutations
+  void addAccessRequest(AccessRequest request) {
+    final formattedNumber = _nextAccessRequestNumber.toString().padLeft(4, '0');
+    _nextAccessRequestNumber++;
+
+    final record = AccessRequestRecord(
+      id: 'req_$formattedNumber',
+      request: request,
+      status: AccessRequestStatus.pending,
+    );
+    _accessRequests.add(record);
+  }
+}
