@@ -13,6 +13,11 @@ class Station {
   final bool isTampered;
   final DateTime lastSeen;
 
+  // Operational state fields added for Screen 08
+  final bool notificationsMuted;
+  final bool hasCamera;
+  final DateTime? lastRefilledAt;
+
   const Station({
     required this.id,
     required this.name,
@@ -25,5 +30,43 @@ class Station {
     this.humidity,
     required this.isTampered,
     required this.lastSeen,
+    this.notificationsMuted = false,
+    this.hasCamera = false,
+    this.lastRefilledAt,
   });
+
+  /// Returns a new Station with the provided fields replaced.
+  Station copyWith({
+    String? id,
+    String? name,
+    String? siteId,
+    String? locationDescription,
+    StationStatus? status,
+    double? baitPercentage,
+    double? batteryPercentage,
+    double? temperature,
+    double? humidity,
+    bool? isTampered,
+    DateTime? lastSeen,
+    bool? notificationsMuted,
+    bool? hasCamera,
+    DateTime? lastRefilledAt,
+  }) {
+    return Station(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      siteId: siteId ?? this.siteId,
+      locationDescription: locationDescription ?? this.locationDescription,
+      status: status ?? this.status,
+      baitPercentage: baitPercentage ?? this.baitPercentage,
+      batteryPercentage: batteryPercentage ?? this.batteryPercentage,
+      temperature: temperature ?? this.temperature,
+      humidity: humidity ?? this.humidity,
+      isTampered: isTampered ?? this.isTampered,
+      lastSeen: lastSeen ?? this.lastSeen,
+      notificationsMuted: notificationsMuted ?? this.notificationsMuted,
+      hasCamera: hasCamera ?? this.hasCamera,
+      lastRefilledAt: lastRefilledAt ?? this.lastRefilledAt,
+    );
+  }
 }

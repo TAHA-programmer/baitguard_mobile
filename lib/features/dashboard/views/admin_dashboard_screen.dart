@@ -36,7 +36,8 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  int _lastErrorEventId = 0;
+  int _lastRefreshErrorEventId = 0;
+  int _lastFacilityErrorEventId = 0;
   final GlobalKey _mapKey = GlobalKey();
 
   @override
@@ -52,10 +53,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   void _onViewModelChange() {
     if (!mounted) return;
     final viewModel = context.read<AdminDashboardViewModel>();
-    if (viewModel.refreshErrorEventId > _lastErrorEventId) {
-      _lastErrorEventId = viewModel.refreshErrorEventId;
+    if (viewModel.refreshErrorEventId > _lastRefreshErrorEventId) {
+      _lastRefreshErrorEventId = viewModel.refreshErrorEventId;
       if (viewModel.refreshErrorMessage != null) {
         AppTopToast.show(context, viewModel.refreshErrorMessage!);
+      }
+    }
+    if (viewModel.facilityErrorEventId > _lastFacilityErrorEventId) {
+      _lastFacilityErrorEventId = viewModel.facilityErrorEventId;
+      if (viewModel.facilityErrorMessage != null) {
+        AppTopToast.show(context, viewModel.facilityErrorMessage!);
       }
     }
   }

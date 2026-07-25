@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../dashboard/view_models/user_dashboard_view_model.dart';
 import '../../dashboard/views/user_dashboard_screen.dart';
+import '../../stations/views/stations_screen.dart';
 import '../widgets/authenticated_bottom_navigation.dart';
 import 'pending_feature_tab.dart';
 
@@ -43,11 +44,9 @@ class _UserAppShellState extends State<UserAppShell> {
           index: _currentIndex,
           children: [
             UserDashboardScreen(onSelectTab: _onTabTapped),
-            const PendingFeatureTab(
-              title: 'Stations',
-              icon: Icons.place_outlined,
-              message: 'Station monitoring will be available here shortly.',
-            ),
+            // Screen 08 — Stations (StationsViewModel provided by AppRouter)
+            const StationsScreen(),
+            // TODO: Replace with full Alerts screen (Screen 09).
             const PendingFeatureTab(
               title: 'Alerts',
               icon: Icons.notifications_outlined,

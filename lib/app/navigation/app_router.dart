@@ -12,11 +12,14 @@ import '../../features/authentication/view_models/request_access_view_model.dart
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/access_request_repository.dart';
 import '../../domain/repositories/dashboard_repository.dart';
+import '../../domain/repositories/station_repository.dart';
 import '../../app/state/app_session_controller.dart';
+import '../../app/state/active_facility_controller.dart';
 import '../../features/navigation/views/user_app_shell.dart';
 import '../../features/dashboard/view_models/user_dashboard_view_model.dart';
 import '../../features/navigation/views/admin_app_shell.dart';
 import '../../features/dashboard/view_models/admin_dashboard_view_model.dart';
+import '../../features/stations/view_models/stations_view_model.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -68,26 +71,82 @@ class AppRouter {
     if (settings.name == RouteNames.userDashboard) {
       return MaterialPageRoute(
         settings: settings,
-        builder: (context) => ChangeNotifierProvider(
-          create: (_) => UserDashboardViewModel(
-            dashboardRepository: context.read<DashboardRepository>(),
-            sessionController: context.read<AppSessionController>(),
-          )..load(),
-          child: const UserAppShell(),
-        ),
+        builder: (context) {
+          final session = context.read<AppSessionController>();
+          final user = session.currentUser;
+
+          // Build the permitted site IDs for this viewer/technician.
+          final permittedSiteIds = user?.siteAccessIds ?? const [];
+
+          return MultiProvider(
+            providers: [
+              ChangeNotifierProvider<ActiveFacilityController>(
+                create: (_) => ActiveFacilityController(
+                  permittedSiteIds: List<String>.unmodifiable(permittedSiteIds),
+                ),
+              ),
+              ChangeNotifierProvider<UserDashboardViewModel>(
+                create: (_) => UserDashboardViewModel(
+                  dashboardRepository: context.read<DashboardRepository>(),
+                  sessionController: session,
+                )..load(),
+              ),
+              ChangeNotifierProxyProvider<ActiveFacilityController,
+                  StationsViewModel>(
+                create: (ctx) => StationsViewModel(
+                  stationRepository: context.read<StationRepository>(),
+                  sessionController: session,
+                  activeFacilityController:
+                      ctx.read<ActiveFacilityController>(),
+                ),
+                update: (_, __, previous) => previous!,
+              ),
+            ],
+            child: const UserAppShell(),
+          );
+        },
       );
     }
 
     if (settings.name == RouteNames.adminDashboard) {
       return MaterialPageRoute(
         settings: settings,
-        builder: (context) => ChangeNotifierProvider(
-          create: (_) => AdminDashboardViewModel(
-            dashboardRepository: context.read<DashboardRepository>(),
-            sessionController: context.read<AppSessionController>(),
-          )..load(),
-          child: const AdminAppShell(),
-        ),
+        builder: (context) {
+          final session = context.read<AppSessionController>();
+          final user = session.currentUser;
+          final permittedSiteIds = user?.siteAccessIds ?? const [];
+
+          return MultiProvider(
+            providers: [
+              ChangeNotifierProvider<ActiveFacilityController>(
+                create: (_) => ActiveFacilityController(
+                  permittedSiteIds: List<String>.unmodifiable(permittedSiteIds),
+                ),
+              ),
+              ChangeNotifierProxyProvider<ActiveFacilityController,
+                  AdminDashboardViewModel>(
+                create: (ctx) => AdminDashboardViewModel(
+                  dashboardRepository: context.read<DashboardRepository>(),
+                  sessionController: session,
+                  activeFacilityController:
+                      ctx.read<ActiveFacilityController>(),
+                )..load(),
+                update: (_, __, previous) => previous!,
+              ),
+              ChangeNotifierProxyProvider<ActiveFacilityController,
+                  StationsViewModel>(
+                create: (ctx) => StationsViewModel(
+                  stationRepository: context.read<StationRepository>(),
+                  sessionController: session,
+                  activeFacilityController:
+                      ctx.read<ActiveFacilityController>(),
+                ),
+                update: (_, __, previous) => previous!,
+              ),
+            ],
+            child: const AdminAppShell(),
+          );
+        },
       );
     }
 

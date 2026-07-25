@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../dashboard/view_models/admin_dashboard_view_model.dart';
 import '../../dashboard/views/admin_dashboard_screen.dart';
+import '../../stations/views/stations_screen.dart';
 import '../models/admin_alert_list_preset.dart';
 import '../widgets/authenticated_bottom_navigation.dart';
 import 'pending_feature_tab.dart';
@@ -62,12 +63,10 @@ class _AdminAppShellState extends State<AdminAppShell> {
           index: _currentIndex,
           children: [
             AdminDashboardScreen(onSelectTab: switchTab),
-            const PendingFeatureTab(
-              title: 'Stations',
-              icon: Icons.place_outlined,
-              message: 'Station monitoring will be available here shortly.',
-            ),
-            // TODO: Use _alertPreset when full Alerts screen is implemented
+            // Screen 08 — Stations (StationsViewModel provided by AppRouter)
+            const StationsScreen(),
+            // TODO: Replace with full Alerts screen (Screen 09).
+            // Use _alertPreset when the Alerts screen is implemented.
             const PendingFeatureTab(
               title: 'Alerts',
               icon: Icons.notifications_outlined,

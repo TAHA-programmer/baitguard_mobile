@@ -5,6 +5,8 @@ import '../../../domain/models/alert_severity.dart';
 import '../../../domain/models/alert_status.dart';
 import '../../../domain/models/alert_type.dart';
 import '../../../domain/models/app_user.dart';
+import '../../../domain/models/detected_species.dart';
+import '../../../domain/models/detection_event.dart';
 import '../../../domain/models/site.dart';
 import '../../../domain/models/station.dart';
 import '../../../domain/models/station_status.dart';
@@ -19,6 +21,7 @@ class MockBaitGuardDataSource {
   final List<Station> _stations = [];
   final List<Alert> _alerts = [];
   final List<AccessRequestRecord> _accessRequests = [];
+  final List<DetectionEvent> _detectionEvents = [];
 
   int _nextAccessRequestNumber = 1;
 
@@ -29,12 +32,14 @@ class MockBaitGuardDataSource {
     List<Station>? stations,
     List<Alert>? alerts,
     List<AccessRequestRecord>? accessRequests,
+    List<DetectionEvent>? detectionEvents,
   }) {
     if (sites != null) _sites.addAll(sites);
     if (users != null) _users.addAll(users);
     if (stations != null) _stations.addAll(stations);
     if (alerts != null) _alerts.addAll(alerts);
     if (accessRequests != null) _accessRequests.addAll(accessRequests);
+    if (detectionEvents != null) _detectionEvents.addAll(detectionEvents);
 
     int highestReqId = 0;
     for (final req in _accessRequests) {
@@ -114,6 +119,7 @@ class MockBaitGuardDataSource {
           humidity: 40.0,
           isTampered: false,
           lastSeen: now.subtract(const Duration(minutes: 2)),
+          hasCamera: true,
         ),
         Station(
           id: 'RB-03',
@@ -127,6 +133,7 @@ class MockBaitGuardDataSource {
           humidity: 55.0,
           isTampered: false,
           lastSeen: now.subtract(const Duration(minutes: 15)),
+          hasCamera: false,
         ),
         Station(
           id: 'RB-05',
@@ -140,6 +147,7 @@ class MockBaitGuardDataSource {
           humidity: 50.0,
           isTampered: false,
           lastSeen: now.subtract(const Duration(minutes: 3)),
+          hasCamera: false,
         ),
         Station(
           id: 'RB-07',
@@ -147,12 +155,13 @@ class MockBaitGuardDataSource {
           siteId: 'site_1',
           locationDescription: 'Warehouse B',
           status: StationStatus.alert,
-          baitPercentage: 75.0,
-          batteryPercentage: 90.0,
-          temperature: 22.5,
-          humidity: 45.0,
+          baitPercentage: 18.0,
+          batteryPercentage: 82.0,
+          temperature: 24.0,
+          humidity: 61.0,
           isTampered: false,
           lastSeen: now.subtract(const Duration(minutes: 5)),
+          hasCamera: true,
         ),
         Station(
           id: 'RB-08',
@@ -166,6 +175,7 @@ class MockBaitGuardDataSource {
           humidity: 48.0,
           isTampered: false,
           lastSeen: now.subtract(const Duration(minutes: 8)),
+          hasCamera: false,
         ),
         Station(
           id: 'RB-09',
@@ -175,36 +185,9 @@ class MockBaitGuardDataSource {
           status: StationStatus.offline,
           baitPercentage: 0.0,
           batteryPercentage: 0.0,
-          temperature: 0.0,
-          humidity: 0.0,
           isTampered: false,
           lastSeen: now.subtract(const Duration(hours: 48)),
-        ),
-        Station(
-          id: 'RB-10',
-          name: 'RB-10 — Utility Room',
-          siteId: 'site_1',
-          locationDescription: 'Utility Room',
-          status: StationStatus.alert,
-          baitPercentage: 85.0,
-          batteryPercentage: 92.0,
-          temperature: 21.5,
-          humidity: 42.0,
-          isTampered: false,
-          lastSeen: now.subtract(const Duration(minutes: 12)),
-        ),
-        Station(
-          id: 'RB-11',
-          name: 'RB-11 — Break Room',
-          siteId: 'site_1',
-          locationDescription: 'Break Room',
-          status: StationStatus.lowBait,
-          baitPercentage: 22.0,
-          batteryPercentage: 88.0,
-          temperature: 23.0,
-          humidity: 46.0,
-          isTampered: false,
-          lastSeen: now.subtract(const Duration(minutes: 18)),
+          hasCamera: false,
         ),
         Station(
           id: 'RB-12',
@@ -218,6 +201,7 @@ class MockBaitGuardDataSource {
           humidity: 50.0,
           isTampered: true,
           lastSeen: now.subtract(const Duration(hours: 24)),
+          hasCamera: true,
         ),
       ],
       alerts: [
@@ -256,24 +240,6 @@ class MockBaitGuardDataSource {
           status: AlertStatus.inReview,
           timestamp: now.subtract(const Duration(hours: 48)),
           description: 'Station offline',
-        ),
-        Alert(
-          id: 'alert_5',
-          stationId: 'RB-10',
-          type: AlertType.rodent,
-          severity: AlertSeverity.critical,
-          status: AlertStatus.open,
-          timestamp: now.subtract(const Duration(minutes: 12)),
-          description: 'Mouse detected',
-        ),
-        Alert(
-          id: 'alert_6',
-          stationId: 'RB-11',
-          type: AlertType.lowBait,
-          severity: AlertSeverity.warning,
-          status: AlertStatus.open,
-          timestamp: now.subtract(const Duration(minutes: 18)),
-          description: 'Low bait (22%)',
         ),
       ],
       accessRequests: [
@@ -314,6 +280,129 @@ class MockBaitGuardDataSource {
           status: AccessRequestStatus.pending,
         ),
       ],
+      // Representative detection events for Screen 08 FeaturedStationCard.
+      // These drive detection counts, recent species, and 7-day activity.
+      // Dashboard-wide aggregates (120 stations, 42 detections today) are
+      // kept separate in MockDeploymentSnapshot and are not updated by
+      // individual station mutations.
+      detectionEvents: [
+        // RB-07 — Warehouse B (alert station, featured default)
+        DetectionEvent(
+          id: 'evt_rb07_1',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(hours: 2)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.96,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_2',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(days: 1, hours: 3)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.91,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_3',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(days: 2, hours: 5)),
+          species: DetectedSpecies.mouse,
+          confidenceScore: 0.87,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_4',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(days: 3, hours: 1)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.94,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_5',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(days: 4, hours: 6)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.88,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_6',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(days: 5, hours: 4)),
+          species: DetectedSpecies.mouse,
+          confidenceScore: 0.82,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_7',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(days: 6, hours: 7)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.90,
+        ),
+        // Additional recent detections for total count
+        DetectionEvent(
+          id: 'evt_rb07_8',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(hours: 6)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.93,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_9',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(hours: 10)),
+          species: DetectedSpecies.mouse,
+          confidenceScore: 0.85,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_10',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(hours: 14)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.89,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_11',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(hours: 18)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.92,
+        ),
+        DetectionEvent(
+          id: 'evt_rb07_12',
+          stationId: 'RB-07',
+          timestamp: now.subtract(const Duration(hours: 22)),
+          species: DetectedSpecies.mouse,
+          confidenceScore: 0.80,
+        ),
+        // RB-01 — Kitchen area
+        DetectionEvent(
+          id: 'evt_rb01_1',
+          stationId: 'RB-01',
+          timestamp: now.subtract(const Duration(days: 1, hours: 2)),
+          species: DetectedSpecies.mouse,
+          confidenceScore: 0.88,
+        ),
+        DetectionEvent(
+          id: 'evt_rb01_2',
+          stationId: 'RB-01',
+          timestamp: now.subtract(const Duration(days: 3, hours: 4)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.91,
+        ),
+        // RB-12 — Main entrance (tamper/alert)
+        DetectionEvent(
+          id: 'evt_rb12_1',
+          stationId: 'RB-12',
+          timestamp: now.subtract(const Duration(days: 1, hours: 1)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.95,
+        ),
+        DetectionEvent(
+          id: 'evt_rb12_2',
+          stationId: 'RB-12',
+          timestamp: now.subtract(const Duration(days: 2, hours: 3)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.89,
+        ),
+      ],
     );
   }
 
@@ -324,6 +413,15 @@ class MockBaitGuardDataSource {
   List<Alert> get alerts => List.unmodifiable(_alerts);
   List<AccessRequestRecord> get accessRequests =>
       List.unmodifiable(_accessRequests);
+  List<DetectionEvent> get detectionEvents =>
+      List.unmodifiable(_detectionEvents);
+
+  /// Returns detection events for a specific station ID.
+  List<DetectionEvent> getEventsForStation(String stationId) {
+    return List.unmodifiable(
+      _detectionEvents.where((e) => e.stationId == stationId).toList(),
+    );
+  }
 
   // Authentication matching
   AppUser? authenticate(String email, String password) {
@@ -352,6 +450,7 @@ class MockBaitGuardDataSource {
   }
 
   // Mutations
+
   void addAccessRequest(AccessRequest request) {
     final formattedNumber = _nextAccessRequestNumber.toString().padLeft(4, '0');
     _nextAccessRequestNumber++;
@@ -362,5 +461,48 @@ class MockBaitGuardDataSource {
       status: AccessRequestStatus.pending,
     );
     _accessRequests.add(record);
+  }
+
+  /// Mutates the shared station store to record a bait refill.
+  ///
+  /// Sets baitPercentage to 100, updates lastRefilledAt.
+  /// Clears StationStatus.lowBait only when that was the sole condition.
+  /// Preserves alert, tamper, and offline state.
+  /// Throws [StateError] when [stationId] is not found.
+  Station refillStation(String stationId) {
+    final index = _stations.indexWhere((s) => s.id == stationId);
+    if (index == -1) {
+      throw StateError('Station not found: $stationId');
+    }
+    final old = _stations[index];
+
+    // Only clear lowBait status when that is the sole condition.
+    // Keep alert, offline, tamper combinations intact.
+    StationStatus newStatus = old.status;
+    if (old.status == StationStatus.lowBait) {
+      newStatus = StationStatus.online;
+    }
+
+    final updated = old.copyWith(
+      baitPercentage: 100.0,
+      status: newStatus,
+      lastRefilledAt: DateTime.now(),
+    );
+    _stations[index] = updated;
+    return updated;
+  }
+
+  /// Mutates the shared station store to update notification-muted state.
+  ///
+  /// Does not alter StationStatus, alerts, or any other field.
+  /// Throws [StateError] when [stationId] is not found.
+  Station setStationNotificationsMuted(String stationId, bool muted) {
+    final index = _stations.indexWhere((s) => s.id == stationId);
+    if (index == -1) {
+      throw StateError('Station not found: $stationId');
+    }
+    final updated = _stations[index].copyWith(notificationsMuted: muted);
+    _stations[index] = updated;
+    return updated;
   }
 }
