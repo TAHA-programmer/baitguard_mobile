@@ -23,15 +23,15 @@ void main() {
     dataSource = MockBaitGuardDataSource.seeded();
     repository = MockStationRepository(dataSource);
     sessionController = AppSessionController();
-    
+
     final user = dataSource.users.firstWhere((u) => u.role == UserRole.admin);
     sessionController.establishSession(user);
-    
+
     activeFacilityController = ActiveFacilityController(
       permittedSiteIds: user.siteAccessIds,
       initialSiteId: user.siteAccessIds.first,
     );
-    
+
     availableSites = user.siteAccessIds
         .map((id) => Site(id: id, name: 'Site $id', location: ''))
         .toList();
@@ -53,24 +53,32 @@ void main() {
   }
 
   group('AddStationScreen', () {
-    testWidgets('1 & 2. Register Station button is part of the scrollable form', (WidgetTester tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+    testWidgets(
+      '1 & 2. Register Station button is part of the scrollable form',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      final buttonFinder = find.widgetWithText(ElevatedButton, 'Register Station');
-      
-      final scrollableFinder = find.ancestor(
-        of: buttonFinder,
-        matching: find.byType(SingleChildScrollView),
-      );
-      
-      expect(scrollableFinder, findsOneWidget);
-      
-      await tester.ensureVisible(buttonFinder);
-      expect(buttonFinder, findsOneWidget);
-    });
+        final buttonFinder = find.widgetWithText(
+          ElevatedButton,
+          'Register Station',
+        );
 
-    testWidgets('3 & 4. Selecting radio buttons triggers ViewModel updates', (WidgetTester tester) async {
+        final scrollableFinder = find.ancestor(
+          of: buttonFinder,
+          matching: find.byType(SingleChildScrollView),
+        );
+
+        expect(scrollableFinder, findsOneWidget);
+
+        await tester.ensureVisible(buttonFinder);
+        expect(buttonFinder, findsOneWidget);
+      },
+    );
+
+    testWidgets('3 & 4. Selecting radio buttons triggers ViewModel updates', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -78,18 +86,20 @@ void main() {
       await tester.ensureVisible(lteRadio);
       await tester.tap(lteRadio);
       await tester.pumpAndSettle();
-      
+
       expect(viewModel.connectivityType, StationConnectivityType.cellular);
-      
+
       final loraRadio = find.text('LoRaWAN');
       await tester.ensureVisible(loraRadio);
       await tester.tap(loraRadio);
       await tester.pumpAndSettle();
-      
+
       expect(viewModel.connectivityType, StationConnectivityType.lorawan);
     });
-    
-    testWidgets('9-12. Notification toggles trigger ViewModel updates', (WidgetTester tester) async {
+
+    testWidgets('9-12. Notification toggles trigger ViewModel updates', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -98,7 +108,7 @@ void main() {
       await tester.ensureVisible(rodentSwitch);
       await tester.tap(rodentSwitch);
       await tester.pumpAndSettle();
-      
+
       // The default is true in StationAlertPreferences.defaults(), so tapping it should make it false
       expect(viewModel.alertPreferences.rodentDetection, isFalse);
     });

@@ -1,7 +1,1 @@
-enum AlertListFilter {
-  all,
-  rodent,
-  lowBait,
-  tamper,
-  offline,
-}
+enum AlertListFilter { all, rodent, lowBait, tamper, offline }

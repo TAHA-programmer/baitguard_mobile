@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../app/state/app_session_controller.dart';
 import '../../../domain/models/alert.dart';
+import '../../../domain/models/detection_event.dart';
 import '../../../domain/models/station.dart';
 import '../../../domain/repositories/alert_repository.dart';
 import '../../../domain/repositories/station_repository.dart';
@@ -20,10 +21,10 @@ class AlertDetailViewModel extends ChangeNotifier {
     required StationRepository stationRepository,
     required AppSessionController sessionController,
     required ActiveFacilityController activeFacilityController,
-  })  : _alertRepository = alertRepository,
-        _stationRepository = stationRepository,
-        _sessionController = sessionController,
-        _activeFacilityController = activeFacilityController {
+  }) : _alertRepository = alertRepository,
+       _stationRepository = stationRepository,
+       _sessionController = sessionController,
+       _activeFacilityController = activeFacilityController {
     _initialize();
   }
 
@@ -51,11 +52,19 @@ class AlertDetailViewModel extends ChangeNotifier {
   Alert? _alert;
   Alert? get alert => _alert;
 
+  Alert? _lastUpdatedAlert;
+  Alert? get lastUpdatedAlert => _lastUpdatedAlert;
+
   Station? _station;
   Station? get station => _station;
 
   AlertPermissions? _permissions;
   AlertPermissions? get permissions => _permissions;
+
+  DetectionEvent? _linkedEvidenceEvent;
+  DetectionEvent? get linkedEvidenceEvent => _linkedEvidenceEvent;
+
+  bool get hasEvidence => _linkedEvidenceEvent != null;
 
   bool _isMutating = false;
   bool get isMutating => _isMutating;
@@ -80,7 +89,7 @@ class AlertDetailViewModel extends ChangeNotifier {
     try {
       final a = await _alertRepository.getAlertById(alertId);
       final s = await _stationRepository.getStationById(a.stationId);
-      
+
       // Verify unauthorized site alert access
       if (s?.siteId != _activeFacilityController.selectedSiteId) {
         throw StateError('Unauthorized site access');
@@ -88,6 +97,18 @@ class AlertDetailViewModel extends ChangeNotifier {
 
       _alert = a;
       _station = s;
+
+      _linkedEvidenceEvent = null;
+      if (s!.hasCamera) {
+        final events = await _stationRepository.getStationEvents(s.id);
+        try {
+          _linkedEvidenceEvent = events.firstWhere(
+            (e) =>
+                e.stationId == a.stationId &&
+                (e.id == a.detectionEventId || e.alertId == a.id),
+          );
+        } catch (_) {}
+      }
     } catch (e) {
       _error = 'Failed to load alert details.';
     } finally {
@@ -100,13 +121,25 @@ class AlertDetailViewModel extends ChangeNotifier {
     try {
       final a = await _alertRepository.getAlertById(alertId);
       final s = await _stationRepository.getStationById(a.stationId);
-      
+
       if (s?.siteId != _activeFacilityController.selectedSiteId) {
         throw StateError('Unauthorized site access');
       }
 
       _alert = a;
       _station = s;
+
+      _linkedEvidenceEvent = null;
+      if (s!.hasCamera) {
+        final events = await _stationRepository.getStationEvents(s.id);
+        try {
+          _linkedEvidenceEvent = events.firstWhere(
+            (e) =>
+                e.stationId == a.stationId &&
+                (e.id == a.detectionEventId || e.alertId == a.id),
+          );
+        } catch (_) {}
+      }
     } catch (e) {
       _refreshErrorMessage = 'Failed to refresh alert.';
       _refreshErrorEventId++;
@@ -119,6 +152,7 @@ class AlertDetailViewModel extends ChangeNotifier {
     try {
       final updated = await _alertRepository.markAlertRead(alertId: alertId);
       _alert = updated;
+      _lastUpdatedAlert = updated;
       notifyListeners();
     } catch (_) {}
   }
@@ -138,6 +172,7 @@ class AlertDetailViewModel extends ChangeNotifier {
         resolvedByUserId: user.id,
       );
       _alert = updated;
+      _lastUpdatedAlert = updated;
       _actionSuccessMessage = 'Alert resolved successfully.';
       _actionSuccessEventId++;
     } catch (e) {
@@ -162,6 +197,7 @@ class AlertDetailViewModel extends ChangeNotifier {
         until: until,
       );
       _alert = updated;
+      _lastUpdatedAlert = updated;
       _actionSuccessMessage = 'Alert snoozed for 1 hour.';
       _actionSuccessEventId++;
     } catch (e) {
@@ -186,6 +222,7 @@ class AlertDetailViewModel extends ChangeNotifier {
         technicianId: technicianId,
       );
       _alert = updated;
+      _lastUpdatedAlert = updated;
       _actionSuccessMessage = 'Alert assigned to technician.';
       _actionSuccessEventId++;
     } catch (e) {
@@ -212,6 +249,7 @@ class AlertDetailViewModel extends ChangeNotifier {
         dismissedByUserId: user.id,
       );
       _alert = updated;
+      _lastUpdatedAlert = updated;
       _actionSuccessMessage = 'Alert dismissed.';
       _actionSuccessEventId++;
     } catch (e) {

@@ -11,7 +11,7 @@ class MockAlertRepository implements AlertRepository {
   @override
   Future<List<Alert>> getAlerts({required String siteId}) async {
     await Future.delayed(const Duration(milliseconds: 600));
-    
+
     // Find all stations for the site
     final siteStationIds = _dataSource.stations
         .where((s) => s.siteId == siteId)
@@ -33,7 +33,7 @@ class MockAlertRepository implements AlertRepository {
       throw StateError('Alert not found');
     }
   }
-  
+
   @override
   Future<Alert> markAlertRead({required String alertId}) async {
     await Future.delayed(const Duration(milliseconds: 300));
@@ -57,7 +57,7 @@ class MockAlertRepository implements AlertRepository {
       ),
     );
   }
-  
+
   @override
   Future<Alert> snoozeAlert({
     required String alertId,
@@ -65,13 +65,9 @@ class MockAlertRepository implements AlertRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
     final alert = await getAlertById(alertId);
-    return _dataSource.updateAlert(
-      alert.copyWith(
-        snoozedUntil: until,
-      ),
-    );
+    return _dataSource.updateAlert(alert.copyWith(snoozedUntil: until));
   }
-  
+
   @override
   Future<Alert> assignAlert({
     required String alertId,
@@ -79,7 +75,9 @@ class MockAlertRepository implements AlertRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
     final alert = await getAlertById(alertId);
-    final techName = technicianId == 'tech_1' ? 'Ahmed Khan' : (technicianId == 'tech_2' ? 'Sarah Jenkins' : 'Technician');
+    final techName = technicianId == 'tech_1'
+        ? 'Ahmed Khan'
+        : (technicianId == 'tech_2' ? 'Sarah Jenkins' : 'Technician');
     return _dataSource.updateAlert(
       alert.copyWith(
         assignedTechnicianId: techName,
@@ -87,7 +85,7 @@ class MockAlertRepository implements AlertRepository {
       ),
     );
   }
-  
+
   @override
   Future<Alert> dismissAlert({
     required String alertId,

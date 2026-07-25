@@ -21,7 +21,11 @@ class UserDashboardScreen extends StatefulWidget {
   final ValueChanged<int> onSelectTab;
   final ValueChanged<String>? onAlertTap;
 
-  const UserDashboardScreen({super.key, required this.onSelectTab, this.onAlertTap});
+  const UserDashboardScreen({
+    super.key,
+    required this.onSelectTab,
+    this.onAlertTap,
+  });
 
   @override
   State<UserDashboardScreen> createState() => _UserDashboardScreenState();

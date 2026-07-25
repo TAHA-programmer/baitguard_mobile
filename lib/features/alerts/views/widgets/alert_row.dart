@@ -53,7 +53,9 @@ class AlertRow extends StatelessWidget {
                           style: AppTypography.manropeRegular.copyWith(
                             fontSize: 15,
                             color: AppColors.textPrimary,
-                            fontWeight: alert.isRead ? FontWeight.normal : FontWeight.w600,
+                            fontWeight: alert.isRead
+                                ? FontWeight.normal
+                                : FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -71,7 +73,9 @@ class AlertRow extends StatelessWidget {
                   _buildStatusBadge(),
                 ],
               ),
-              if (onResolve != null || onSnooze != null || alert.snoozedUntil != null) ...[
+              if (onResolve != null ||
+                  onSnooze != null ||
+                  alert.snoozedUntil != null) ...[
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -96,7 +100,9 @@ class AlertRow extends StatelessWidget {
                         ),
                         child: const Text('Snooze'),
                       ),
-                    if (onResolve != null && alert.snoozedUntil == null && onSnooze != null)
+                    if (onResolve != null &&
+                        alert.snoozedUntil == null &&
+                        onSnooze != null)
                       const SizedBox(width: 8),
                     if (onResolve != null)
                       ElevatedButton.icon(
@@ -104,19 +110,32 @@ class AlertRow extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryBlue,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: AppColors.primaryBlue.withValues(alpha: 0.5),
-                          disabledForegroundColor: Colors.white.withValues(alpha: 0.8),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          disabledBackgroundColor: AppColors.primaryBlue
+                              .withValues(alpha: 0.5),
+                          disabledForegroundColor: Colors.white.withValues(
+                            alpha: 0.8,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           minimumSize: const Size(0, 36),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           elevation: 0,
                         ),
-                        icon: const Icon(Icons.check, size: 16, color: Colors.white),
+                        icon: const Icon(
+                          Icons.check,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                         label: Text(
                           'Resolve',
-                          style: AppTypography.manropeSemiBold.copyWith(fontSize: 13, color: Colors.white),
+                          style: AppTypography.manropeSemiBold.copyWith(
+                            fontSize: 13,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                   ],
@@ -222,7 +241,9 @@ class AlertRow extends StatelessWidget {
 
     if (difference.inDays == 0) {
       // Show time e.g., 2:13 AM
-      final hour = time.hour > 12 ? time.hour - 12 : (time.hour == 0 ? 12 : time.hour);
+      final hour = time.hour > 12
+          ? time.hour - 12
+          : (time.hour == 0 ? 12 : time.hour);
       final amPm = time.hour >= 12 ? 'PM' : 'AM';
       final minute = time.minute.toString().padLeft(2, '0');
       return '$hour:$minute $amPm';

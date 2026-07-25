@@ -17,7 +17,8 @@ class UserAppShell extends StatefulWidget {
 }
 
 class _UserAppShellState extends State<UserAppShell> {
-  final GlobalKey<AlertsFlowNavigatorState> _alertsNavigatorKey = GlobalKey<AlertsFlowNavigatorState>();
+  final GlobalKey<AlertsFlowNavigatorState> _alertsNavigatorKey =
+      GlobalKey<AlertsFlowNavigatorState>();
   int _currentIndex = 0;
 
   void _onTabTapped(int index) {

@@ -31,7 +31,11 @@ class AdminDashboardScreen extends StatefulWidget {
   final void Function(int tabIndex, {AdminAlertListPreset preset}) onSelectTab;
   final ValueChanged<String>? onAlertTap;
 
-  const AdminDashboardScreen({super.key, required this.onSelectTab, this.onAlertTap});
+  const AdminDashboardScreen({
+    super.key,
+    required this.onSelectTab,
+    this.onAlertTap,
+  });
 
   @override
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();

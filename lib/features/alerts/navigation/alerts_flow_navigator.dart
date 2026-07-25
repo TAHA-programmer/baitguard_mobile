@@ -4,6 +4,7 @@ import '../../../app/state/active_facility_controller.dart';
 import '../../../app/state/app_session_controller.dart';
 import '../../../domain/repositories/alert_repository.dart';
 import '../../../domain/repositories/station_repository.dart';
+import '../../../domain/models/alert.dart';
 import '../../navigation/models/admin_alert_list_preset.dart';
 import '../view_models/alerts_view_model.dart';
 import '../view_models/alert_detail_view_model.dart';
@@ -15,10 +16,7 @@ import '../../stations/view_models/station_detail_view_model.dart';
 class AlertsFlowNavigator extends StatefulWidget {
   final AdminAlertListPreset? initialPreset;
 
-  const AlertsFlowNavigator({
-    super.key,
-    this.initialPreset,
-  });
+  const AlertsFlowNavigator({super.key, this.initialPreset});
 
   @override
   State<AlertsFlowNavigator> createState() => AlertsFlowNavigatorState();
@@ -45,7 +43,8 @@ class AlertsFlowNavigatorState extends State<AlertsFlowNavigator> {
   @override
   void didUpdateWidget(covariant AlertsFlowNavigator oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialPreset != null && widget.initialPreset != oldWidget.initialPreset) {
+    if (widget.initialPreset != null &&
+        widget.initialPreset != oldWidget.initialPreset) {
       // Pop to first route and apply preset
       _navigatorKey.currentState?.popUntil((route) => route.isFirst);
       _alertsViewModel.applyPreset(widget.initialPreset!);
@@ -58,9 +57,15 @@ class AlertsFlowNavigatorState extends State<AlertsFlowNavigator> {
     super.dispose();
   }
 
-  void openAlertDetail(String alertId) {
+  void openAlertDetail(String alertId) async {
     _navigatorKey.currentState?.popUntil((route) => route.isFirst);
-    _navigatorKey.currentState?.pushNamed('/alert-detail', arguments: alertId);
+    final result = await _navigatorKey.currentState?.pushNamed(
+      '/alert-detail',
+      arguments: alertId,
+    );
+    if (result is Alert && mounted) {
+      _alertsViewModel.applyUpdatedAlert(result);
+    }
   }
 
   void showList({AdminAlertListPreset preset = AdminAlertListPreset.all}) {
@@ -74,7 +79,7 @@ class AlertsFlowNavigatorState extends State<AlertsFlowNavigator> {
       key: _navigatorKey,
       onGenerateRoute: (settings) {
         WidgetBuilder builder;
-        
+
         switch (settings.name) {
           case '/':
             builder = (ctx) => ChangeNotifierProvider.value(
@@ -82,7 +87,7 @@ class AlertsFlowNavigatorState extends State<AlertsFlowNavigator> {
               child: const AlertsScreen(),
             );
             break;
-            
+
           case '/alert-detail':
             final alertId = settings.arguments as String;
             builder = (ctx) => ChangeNotifierProvider(
@@ -91,12 +96,13 @@ class AlertsFlowNavigatorState extends State<AlertsFlowNavigator> {
                 alertRepository: context.read<AlertRepository>(),
                 stationRepository: context.read<StationRepository>(),
                 sessionController: context.read<AppSessionController>(),
-                activeFacilityController: context.read<ActiveFacilityController>(),
+                activeFacilityController: context
+                    .read<ActiveFacilityController>(),
               ),
               child: const AlertDetailScreen(),
             );
             break;
-            
+
           case '/station-detail':
             final stationId = settings.arguments as String;
             builder = (ctx) => ChangeNotifierProvider(
@@ -107,14 +113,16 @@ class AlertsFlowNavigatorState extends State<AlertsFlowNavigator> {
               child: StationDetailScreen(stationId: stationId),
             );
             break;
-            
+
           default:
             builder = (ctx) => Scaffold(
               appBar: AppBar(title: const Text('Unknown Route')),
-              body: Center(child: Text('No route defined for ${settings.name}')),
+              body: Center(
+                child: Text('No route defined for ${settings.name}'),
+              ),
             );
         }
-        
+
         return MaterialPageRoute(builder: builder, settings: settings);
       },
     );

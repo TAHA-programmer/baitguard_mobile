@@ -24,11 +24,16 @@ class CriticalAttentionBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.criticalRed.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.criticalRed.withValues(alpha: 0.2)),
+          border: Border.all(
+            color: AppColors.criticalRed.withValues(alpha: 0.2),
+          ),
         ),
         child: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: AppColors.criticalRed),
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.criticalRed,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

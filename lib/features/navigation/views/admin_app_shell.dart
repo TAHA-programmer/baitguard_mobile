@@ -18,14 +18,17 @@ class AdminAppShell extends StatefulWidget {
 }
 
 class _AdminAppShellState extends State<AdminAppShell> {
-  final GlobalKey<AlertsFlowNavigatorState> _alertsNavigatorKey = GlobalKey<AlertsFlowNavigatorState>();
+  final GlobalKey<AlertsFlowNavigatorState> _alertsNavigatorKey =
+      GlobalKey<AlertsFlowNavigatorState>();
   int _currentIndex = 0;
   AdminAlertListPreset _alertPreset = AdminAlertListPreset.all;
 
   void _onTabTapped(int index) {
     if (_currentIndex == index) {
       if (index == 2) {
-        _alertsNavigatorKey.currentState?.showList(preset: AdminAlertListPreset.all);
+        _alertsNavigatorKey.currentState?.showList(
+          preset: AdminAlertListPreset.all,
+        );
       }
       return;
     }

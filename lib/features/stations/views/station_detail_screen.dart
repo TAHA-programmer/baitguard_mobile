@@ -511,9 +511,14 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     return InkWell(
       onTap: () {
         if (event.alertId != null) {
-          Navigator.of(context).pushNamed('/alert-detail', arguments: event.alertId);
+          Navigator.of(
+            context,
+          ).pushNamed('/alert-detail', arguments: event.alertId);
         } else {
-          AppTopToast.show(context, 'This event does not have an associated alert.');
+          AppTopToast.show(
+            context,
+            'This event does not have an associated alert.',
+          );
         }
       },
       child: Row(

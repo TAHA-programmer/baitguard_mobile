@@ -214,6 +214,7 @@ class MockBaitGuardDataSource {
           status: AlertStatus.open,
           timestamp: DateTime(now.year, now.month, now.day, 2, 13),
           description: 'Rat detected',
+          detectionEventId: 'evt_rb07_1',
         ),
         Alert(
           id: 'alert_2',
@@ -268,6 +269,7 @@ class MockBaitGuardDataSource {
           status: AlertStatus.resolved,
           timestamp: now.subtract(const Duration(days: 5, hours: 8)),
           description: 'Rat detected',
+          detectionEventId: 'evt_rb08_1',
         ),
         Alert(
           id: 'alert_8',
@@ -432,7 +434,6 @@ class MockBaitGuardDataSource {
           timestamp: now.subtract(const Duration(days: 1, hours: 1)),
           species: DetectedSpecies.rat,
           confidenceScore: 0.95,
-          alertId: 'alert_3',
         ),
         DetectionEvent(
           id: 'evt_rb12_2',
@@ -440,6 +441,15 @@ class MockBaitGuardDataSource {
           timestamp: now.subtract(const Duration(days: 2, hours: 3)),
           species: DetectedSpecies.rat,
           confidenceScore: 0.89,
+        ),
+        // RB-08 — Camera-less station with a mock event
+        DetectionEvent(
+          id: 'evt_rb08_1',
+          stationId: 'RB-08',
+          timestamp: now.subtract(const Duration(days: 5, hours: 8)),
+          species: DetectedSpecies.rat,
+          confidenceScore: 0.85,
+          alertId: 'alert_7',
         ),
       ],
     );

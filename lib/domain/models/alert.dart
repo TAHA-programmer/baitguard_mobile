@@ -10,7 +10,7 @@ class Alert {
   final AlertStatus status;
   final DateTime timestamp;
   final String description;
-  
+
   // New fields for complete Alerts feature
   final bool isRead;
   final DateTime? snoozedUntil;
@@ -67,8 +67,12 @@ class Alert {
       timestamp: timestamp ?? this.timestamp,
       description: description ?? this.description,
       isRead: isRead ?? this.isRead,
-      snoozedUntil: clearSnoozedUntil ? null : (snoozedUntil ?? this.snoozedUntil),
-      assignedTechnicianId: clearAssignedTechnicianId ? null : (assignedTechnicianId ?? this.assignedTechnicianId),
+      snoozedUntil: clearSnoozedUntil
+          ? null
+          : (snoozedUntil ?? this.snoozedUntil),
+      assignedTechnicianId: clearAssignedTechnicianId
+          ? null
+          : (assignedTechnicianId ?? this.assignedTechnicianId),
       resolvedAt: resolvedAt ?? this.resolvedAt,
       resolvedByUserId: resolvedByUserId ?? this.resolvedByUserId,
       detectionEventId: detectionEventId ?? this.detectionEventId,

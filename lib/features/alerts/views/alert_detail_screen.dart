@@ -6,6 +6,7 @@ import '../../../domain/models/alert.dart';
 import '../../../domain/models/alert_type.dart';
 import '../../../domain/models/alert_status.dart';
 import '../../../domain/models/alert_severity.dart';
+import '../../../domain/models/detection_event.dart';
 import '../view_models/alert_detail_view_model.dart';
 import '../../../core/widgets/app_top_toast.dart';
 
@@ -20,6 +21,7 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
   int _lastRefreshErrorEventId = 0;
   int _lastActionSuccessEventId = 0;
   int _lastActionErrorEventId = 0;
+  bool _isPopping = false;
 
   @override
   void initState() {
@@ -74,7 +76,10 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Resolve'),
           ),
         ],
@@ -99,7 +104,10 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.criticalRed, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.criticalRed,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Dismiss'),
           ),
         ],
@@ -124,7 +132,10 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Snooze'),
           ),
         ],
@@ -143,7 +154,9 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
     if (vm.isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primaryBlue)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primaryBlue),
+        ),
       );
     }
 
@@ -165,7 +178,9 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => context.read<AlertDetailViewModel>().refresh(),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                ),
                 child: const Text('Retry'),
               ),
             ],
@@ -173,8 +188,6 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
         ),
       );
     }
-
-
 
     final alert = vm.alert;
     final station = vm.station;
@@ -190,67 +203,94 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
     final isDismissed = alert.status == AlertStatus.dismissed;
     final isActionable = !isResolved && !isDismissed;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildBackButton(context),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Alert Detail',
-                    style: AppTypography.manropeBold.copyWith(
-                      fontSize: 24,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildSummaryCard(alert, station.locationDescription),
-                  const SizedBox(height: 24),
-                  _buildInformationCard(alert, station.name, station.locationDescription),
-                  if (alert.type == AlertType.rodent) ...[
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _isPopping) return;
+        _isPopping = true;
+        final latestAlert = context
+            .read<AlertDetailViewModel>()
+            .lastUpdatedAlert;
+        Navigator.of(context).pop(latestAlert);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildBackButton(context),
                     const SizedBox(height: 24),
-                    _buildEvidenceCard(),
-                  ],
-                  const SizedBox(height: 32),
-                  if (isActionable) _buildActionArea(context, vm),
-                  if (vm.permissions?.canViewStation == true) ...[
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.of(context).pushNamed('/station-detail', arguments: station.id);
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: const BorderSide(color: AppColors.borderSecondary),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('View Station'),
+                    Text(
+                      'Alert Detail',
+                      style: AppTypography.manropeBold.copyWith(
+                        fontSize: 24,
+                        color: AppColors.textPrimary,
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    _buildSummaryCard(alert, station.locationDescription),
+                    const SizedBox(height: 24),
+                    _buildInformationCard(
+                      alert,
+                      station.name,
+                      station.locationDescription,
+                    ),
+                    if (vm.hasEvidence) ...[
+                      const SizedBox(height: 24),
+                      _buildEvidenceCard(vm.linkedEvidenceEvent!),
+                    ],
+                    const SizedBox(height: 32),
+                    if (isActionable) _buildActionArea(context, vm),
+                    if (vm.permissions?.canViewStation == true) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed(
+                              '/station-detail',
+                              arguments: station.id,
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: const BorderSide(
+                              color: AppColors.borderSecondary,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('View Station'),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 48),
                   ],
-                  const SizedBox(height: 48),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildBackButton(BuildContext context) {
     return InkWell(
-      onTap: () => Navigator.of(context).pop(),
+      onTap: () {
+        if (_isPopping) return;
+        _isPopping = true;
+        final latestAlert = context
+            .read<AlertDetailViewModel>()
+            .lastUpdatedAlert;
+        Navigator.of(context).pop(latestAlert);
+      },
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(8),
@@ -259,7 +299,11 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
           color: Colors.white,
           border: Border.all(color: AppColors.borderSecondary),
         ),
-        child: const Icon(Icons.arrow_back, size: 20, color: AppColors.textPrimary),
+        child: const Icon(
+          Icons.arrow_back,
+          size: 20,
+          color: AppColors.textPrimary,
+        ),
       ),
     );
   }
@@ -378,7 +422,11 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
     );
   }
 
-  Widget _buildInformationCard(Alert alert, String stationName, String location) {
+  Widget _buildInformationCard(
+    Alert alert,
+    String stationName,
+    String location,
+  ) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -399,14 +447,23 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
           const SizedBox(height: 16),
           _buildInfoRow('Station', stationName),
           _buildInfoRow('Location', location),
-          _buildInfoRow('Date', '${alert.timestamp.month}/${alert.timestamp.day}/${alert.timestamp.year}'),
+          _buildInfoRow(
+            'Date',
+            '${alert.timestamp.month}/${alert.timestamp.day}/${alert.timestamp.year}',
+          ),
           _buildInfoRow('Time', _formatTime(alert.timestamp)),
           _buildInfoRow('Alert type', _getAlertTypeName(alert.type)),
           _buildInfoRow('Priority', _getSeverityName(alert.severity)),
           if (alert.snoozedUntil != null)
-            _buildInfoRow('Snoozed until', '${alert.snoozedUntil!.month}/${alert.snoozedUntil!.day} ${_formatTime(alert.snoozedUntil!)}'),
+            _buildInfoRow(
+              'Snoozed until',
+              '${alert.snoozedUntil!.month}/${alert.snoozedUntil!.day} ${_formatTime(alert.snoozedUntil!)}',
+            ),
           if (alert.assignedTechnicianId != null)
-            _buildInfoRow('Assigned to', 'Technician (${alert.assignedTechnicianId})'),
+            _buildInfoRow(
+              'Assigned to',
+              'Technician (${alert.assignedTechnicianId})',
+            ),
         ],
       ),
     );
@@ -443,7 +500,7 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
     );
   }
 
-  Widget _buildEvidenceCard() {
+  Widget _buildEvidenceCard(DetectionEvent event) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -454,25 +511,102 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Evidence',
-            style: AppTypography.manropeSemiBold.copyWith(
-              fontSize: 16,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Evidence',
+                style: AppTypography.manropeSemiBold.copyWith(
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                _formatTime(event.timestamp),
+                style: AppTypography.manropeRegular.copyWith(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          Container(
-            height: 160,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.borderSecondary),
+          if (event.evidenceImageUrl != null)
+            Container(
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.borderSecondary),
+                image: DecorationImage(
+                  image: AssetImage(event.evidenceImageUrl!),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.borderSecondary),
+              ),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.image_not_supported_outlined,
+                    color: AppColors.textSecondary,
+                    size: 32,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Captured evidence is unavailable.',
+                    style: AppTypography.manropeRegular.copyWith(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-            child: const Center(
-              child: Icon(Icons.camera_alt_outlined, color: AppColors.textSecondary, size: 48),
-            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                'Species: ',
+                style: AppTypography.manropeRegular.copyWith(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              Text(
+                event.species.name.substring(0, 1).toUpperCase() +
+                    event.species.name.substring(1),
+                style: AppTypography.manropeMedium.copyWith(
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Confidence: ',
+                style: AppTypography.manropeRegular.copyWith(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              Text(
+                '${(event.confidenceScore * 100).round()}%',
+                style: AppTypography.manropeMedium.copyWith(
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -519,9 +653,11 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: vm.isMutating ? null : () {
-                _showAssignDialog(context, vm);
-              },
+              onPressed: vm.isMutating
+                  ? null
+                  : () {
+                      _showAssignDialog(context, vm);
+                    },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: const BorderSide(color: AppColors.borderSecondary),
@@ -589,7 +725,9 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
   }
 
   String _formatTime(DateTime time) {
-    final hour = time.hour > 12 ? time.hour - 12 : (time.hour == 0 ? 12 : time.hour);
+    final hour = time.hour > 12
+        ? time.hour - 12
+        : (time.hour == 0 ? 12 : time.hour);
     final amPm = time.hour >= 12 ? 'PM' : 'AM';
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute $amPm';
@@ -597,18 +735,25 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
 
   String _getAlertTypeName(AlertType type) {
     switch (type) {
-      case AlertType.rodent: return 'Rodent';
-      case AlertType.lowBait: return 'Low bait';
-      case AlertType.tamper: return 'Tamper';
-      case AlertType.stationOffline: return 'Offline';
+      case AlertType.rodent:
+        return 'Rodent';
+      case AlertType.lowBait:
+        return 'Low bait';
+      case AlertType.tamper:
+        return 'Tamper';
+      case AlertType.stationOffline:
+        return 'Offline';
     }
   }
 
   String _getSeverityName(AlertSeverity severity) {
     switch (severity) {
-      case AlertSeverity.critical: return 'High';
-      case AlertSeverity.warning: return 'Medium';
-      case AlertSeverity.info: return 'Low';
+      case AlertSeverity.critical:
+        return 'High';
+      case AlertSeverity.warning:
+        return 'Medium';
+      case AlertSeverity.info:
+        return 'Low';
     }
   }
 }

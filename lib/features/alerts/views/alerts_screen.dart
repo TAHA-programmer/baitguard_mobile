@@ -78,7 +78,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Resolve'),
           ),
         ],
@@ -103,7 +106,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Snooze'),
           ),
         ],
@@ -122,11 +128,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
     if (vm.isLoading && vm.todayAlerts.isEmpty && vm.earlierAlerts.isEmpty) {
       return const Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primaryBlue)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primaryBlue),
+        ),
       );
     }
 
-    if (vm.error != null && vm.todayAlerts.isEmpty && vm.earlierAlerts.isEmpty) {
+    if (vm.error != null &&
+        vm.todayAlerts.isEmpty &&
+        vm.earlierAlerts.isEmpty) {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
@@ -144,7 +154,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => context.read<AlertsViewModel>().refresh(),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                ),
                 child: const Text('Retry'),
               ),
             ],
@@ -152,8 +164,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
         ),
       );
     }
-
-
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -195,7 +205,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
             if (vm.todayAlerts.isEmpty && vm.earlierAlerts.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 48,
+                  ),
                   child: Center(
                     child: Text(
                       'No alerts match this filter.',
@@ -322,7 +335,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: isSelected ? AppColors.primaryBlue : AppColors.borderSecondary,
+                  color: isSelected
+                      ? AppColors.primaryBlue
+                      : AppColors.borderSecondary,
                 ),
               ),
             ),
@@ -334,11 +349,16 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   String _getFilterName(AlertListFilter filter) {
     switch (filter) {
-      case AlertListFilter.all: return 'All';
-      case AlertListFilter.rodent: return 'Rodent';
-      case AlertListFilter.lowBait: return 'Low bait';
-      case AlertListFilter.tamper: return 'Tamper';
-      case AlertListFilter.offline: return 'Offline';
+      case AlertListFilter.all:
+        return 'All';
+      case AlertListFilter.rodent:
+        return 'Rodent';
+      case AlertListFilter.lowBait:
+        return 'Low bait';
+      case AlertListFilter.tamper:
+        return 'Tamper';
+      case AlertListFilter.offline:
+        return 'Offline';
     }
   }
 
@@ -346,44 +366,59 @@ class _AlertsScreenState extends State<AlertsScreen> {
     return 'Today';
   }
 
-  Widget _buildAlertSection(BuildContext context, {required String title, required List<Alert> alerts, required AlertsViewModel vm}) {
-    if (alerts.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-    
+  Widget _buildAlertSection(
+    BuildContext context, {
+    required String title,
+    required List<Alert> alerts,
+    required AlertsViewModel vm,
+  }) {
+    if (alerts.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (ctx, index) {
-            if (index == 0) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  title,
-                  style: AppTypography.manropeBold.copyWith(
-                    fontSize: 18,
-                    color: AppColors.textPrimary,
-                  ),
+        delegate: SliverChildBuilderDelegate((ctx, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                title,
+                style: AppTypography.manropeBold.copyWith(
+                  fontSize: 18,
+                  color: AppColors.textPrimary,
                 ),
-              );
-            }
-            final alert = alerts[index - 1];
-            final station = vm.getStationForAlert(alert.id);
-            return AlertRow(
-              alert: alert,
-              stationLocation: station?.locationDescription ?? 'Unknown location',
-              onTap: () {
-                Navigator.of(context).pushNamed('/alert-detail', arguments: alert.id);
-              },
-              onResolve: vm.permissions?.canResolve == true && alert.status != AlertStatus.resolved && alert.status != AlertStatus.dismissed
-                  ? () => _confirmResolve(vm, alert)
-                  : null,
-              onSnooze: vm.permissions?.canSnooze == true && alert.status != AlertStatus.resolved && alert.status != AlertStatus.dismissed
-                  ? () => _confirmSnooze(vm, alert)
-                  : null,
+              ),
             );
-          },
-          childCount: alerts.length + 1,
-        ),
+          }
+          final alert = alerts[index - 1];
+          final station = vm.getStationForAlert(alert.id);
+          return AlertRow(
+            alert: alert,
+            stationLocation: station?.locationDescription ?? 'Unknown location',
+            onTap: () async {
+              final result = await Navigator.of(
+                context,
+              ).pushNamed('/alert-detail', arguments: alert.id);
+              if (result is Alert && context.mounted) {
+                vm.applyUpdatedAlert(result);
+              }
+            },
+            onResolve:
+                vm.permissions?.canResolve == true &&
+                    alert.status != AlertStatus.resolved &&
+                    alert.status != AlertStatus.dismissed
+                ? () => _confirmResolve(vm, alert)
+                : null,
+            onSnooze:
+                vm.permissions?.canSnooze == true &&
+                    alert.status != AlertStatus.resolved &&
+                    alert.status != AlertStatus.dismissed
+                ? () => _confirmSnooze(vm, alert)
+                : null,
+          );
+        }, childCount: alerts.length + 1),
       ),
     );
   }
@@ -393,7 +428,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
     if (activity.isEmpty) return const SizedBox.shrink();
 
     // Max count for Y axis scaling
-    final maxY = activity.map((e) => e.count).fold(0, (a, b) => a > b ? a : b).toDouble();
+    final maxY = activity
+        .map((e) => e.count)
+        .fold(0, (a, b) => a > b ? a : b)
+        .toDouble();
     final topY = (maxY + 5).ceilToDouble(); // give some padding
 
     final spots = activity.asMap().entries.map((e) {
@@ -413,7 +451,12 @@ class _AlertsScreenState extends State<AlertsScreen> {
         const SizedBox(height: 16),
         Container(
           height: 150,
-          padding: const EdgeInsets.only(top: 16, right: 16, bottom: 8, left: 8),
+          padding: const EdgeInsets.only(
+            top: 16,
+            right: 16,
+            bottom: 8,
+            left: 8,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -424,9 +467,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
               gridData: const FlGridData(show: false),
               titlesData: FlTitlesData(
                 show: true,
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                leftTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -434,7 +483,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       final idx = value.toInt();
                       if (idx >= 0 && idx < activity.length) {
                         final date = activity[idx].day;
-                        final weekday = const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][date.weekday - 1];
+                        final weekday = const [
+                          'Mon',
+                          'Tue',
+                          'Wed',
+                          'Thu',
+                          'Fri',
+                          'Sat',
+                          'Sun',
+                        ][date.weekday - 1];
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
@@ -481,7 +538,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Widget _buildHotspots(AlertsViewModel vm) {
     final hotspots = vm.hotspotStations;
     if (hotspots.isEmpty) return const SizedBox.shrink();
-    
+
     final maxCount = hotspots.first.alertCount;
 
     return Column(
@@ -508,7 +565,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 hotspot: h,
                 maxCount: maxCount,
                 onTap: () {
-                  Navigator.of(context).pushNamed('/station-detail', arguments: h.stationId);
+                  Navigator.of(
+                    context,
+                  ).pushNamed('/station-detail', arguments: h.stationId);
                 },
               );
             }).toList(),

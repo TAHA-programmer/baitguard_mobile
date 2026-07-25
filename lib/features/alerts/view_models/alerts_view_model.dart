@@ -25,10 +25,10 @@ class AlertsViewModel extends ChangeNotifier {
     required StationRepository stationRepository,
     required AppSessionController sessionController,
     required ActiveFacilityController activeFacilityController,
-  })  : _alertRepository = alertRepository,
-        _stationRepository = stationRepository,
-        _sessionController = sessionController,
-        _activeFacilityController = activeFacilityController {
+  }) : _alertRepository = alertRepository,
+       _stationRepository = stationRepository,
+       _sessionController = sessionController,
+       _activeFacilityController = activeFacilityController {
     _activeFacilityController.addListener(_onFacilityChanged);
     _initialize();
   }
@@ -167,72 +167,104 @@ class AlertsViewModel extends ChangeNotifier {
       case AlertListFilter.tamper:
         return _allAlerts.where((a) => a.type == AlertType.tamper).toList();
       case AlertListFilter.offline:
-        return _allAlerts.where((a) => a.type == AlertType.stationOffline).toList();
+        return _allAlerts
+            .where((a) => a.type == AlertType.stationOffline)
+            .toList();
     }
   }
 
   List<Alert> get todayAlerts {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
-    return _filteredAlerts.where((a) => !a.timestamp.isBefore(todayStart)).toList();
+    return _filteredAlerts
+        .where((a) => !a.timestamp.isBefore(todayStart))
+        .toList();
   }
 
   List<Alert> get earlierAlerts {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
-    return _filteredAlerts.where((a) => a.timestamp.isBefore(todayStart)).toList();
+    return _filteredAlerts
+        .where((a) => a.timestamp.isBefore(todayStart))
+        .toList();
   }
 
   int get unreadCount => _allAlerts.where((a) => !a.isRead).length;
 
-  int get unresolvedCount => _allAlerts.where((a) => a.status != AlertStatus.resolved && a.status != AlertStatus.dismissed).length;
+  int get unresolvedCount => _allAlerts
+      .where(
+        (a) =>
+            a.status != AlertStatus.resolved &&
+            a.status != AlertStatus.dismissed,
+      )
+      .length;
 
-  int get highCount => _allAlerts.where((a) => a.severity == AlertSeverity.critical).length;
-  int get mediumCount => _allAlerts.where((a) => a.severity == AlertSeverity.warning).length;
-  int get lowCount => _allAlerts.where((a) => a.severity == AlertSeverity.info).length;
+  int get highCount =>
+      _allAlerts.where((a) => a.severity == AlertSeverity.critical).length;
+  int get mediumCount =>
+      _allAlerts.where((a) => a.severity == AlertSeverity.warning).length;
+  int get lowCount =>
+      _allAlerts.where((a) => a.severity == AlertSeverity.info).length;
 
   List<Alert> get criticalUnresolvedAlerts {
     return _allAlerts.where((a) {
       final isCritical = a.severity == AlertSeverity.critical;
-      final isUnresolved = a.status != AlertStatus.resolved && a.status != AlertStatus.dismissed;
+      final isUnresolved =
+          a.status != AlertStatus.resolved && a.status != AlertStatus.dismissed;
       return isCritical && isUnresolved;
     }).toList();
   }
 
   Station? getStationForAlert(String alertId) {
-    final alert = _allAlerts.cast<Alert?>().firstWhere((a) => a?.id == alertId, orElse: () => null);
+    final alert = _allAlerts.cast<Alert?>().firstWhere(
+      (a) => a?.id == alertId,
+      orElse: () => null,
+    );
     if (alert == null) return null;
-    return _allStations.cast<Station?>().firstWhere((s) => s?.id == alert.stationId, orElse: () => null);
+    return _allStations.cast<Station?>().firstWhere(
+      (s) => s?.id == alert.stationId,
+      orElse: () => null,
+    );
   }
 
   List<AlertActivityPoint> get sevenDayActivity {
     final map = <DateTime, int>{};
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     for (int i = 6; i >= 0; i--) {
       map[today.subtract(Duration(days: i))] = 0;
     }
 
     for (final alert in _allAlerts) {
-      final d = DateTime(alert.timestamp.year, alert.timestamp.month, alert.timestamp.day);
+      final d = DateTime(
+        alert.timestamp.year,
+        alert.timestamp.month,
+        alert.timestamp.day,
+      );
       if (map.containsKey(d)) {
         map[d] = map[d]! + 1;
       }
     }
 
-    return map.entries.map((e) => AlertActivityPoint(day: e.key, count: e.value)).toList()
+    return map.entries
+        .map((e) => AlertActivityPoint(day: e.key, count: e.value))
+        .toList()
       ..sort((a, b) => a.day.compareTo(b.day));
   }
 
   List<AlertHotspotStation> get hotspotStations {
     final stationCounts = <String, int>{};
     for (final alert in _allAlerts) {
-      stationCounts[alert.stationId] = (stationCounts[alert.stationId] ?? 0) + 1;
+      stationCounts[alert.stationId] =
+          (stationCounts[alert.stationId] ?? 0) + 1;
     }
-    
+
     final hotspots = stationCounts.entries.map((e) {
-      final st = _allStations.cast<Station?>().firstWhere((s) => s?.id == e.key, orElse: () => null);
+      final st = _allStations.cast<Station?>().firstWhere(
+        (s) => s?.id == e.key,
+        orElse: () => null,
+      );
       return AlertHotspotStation(
         stationId: e.key,
         location: st?.locationDescription ?? 'Unknown',
@@ -348,7 +380,7 @@ class AlertsViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   Future<void> markAlertRead(String alertId) async {
     final idx = _allAlerts.indexWhere((a) => a.id == alertId);
     if (idx != -1 && !_allAlerts[idx].isRead) {
@@ -364,6 +396,14 @@ class AlertsViewModel extends ChangeNotifier {
     final idx = _allAlerts.indexWhere((a) => a.id == updated.id);
     if (idx != -1) {
       _allAlerts[idx] = updated;
+    }
+  }
+
+  void applyUpdatedAlert(Alert updatedAlert) {
+    final idx = _allAlerts.indexWhere((a) => a.id == updatedAlert.id);
+    if (idx != -1) {
+      _allAlerts[idx] = updatedAlert;
+      notifyListeners();
     }
   }
 }
