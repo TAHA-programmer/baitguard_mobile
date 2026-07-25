@@ -98,7 +98,7 @@ class StationListCard extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: stations.length,
-              separatorBuilder: (_, __) => Divider(
+              separatorBuilder: (context, index) => Divider(
                 color: AppColors.divider.withValues(alpha: 0.5),
                 height: 1,
                 indent: AppSpacing.md,
@@ -123,11 +123,7 @@ class StationListRow extends StatelessWidget {
   final Station station;
   final void Function(String stationId) onTap;
 
-  const StationListRow({
-    super.key,
-    required this.station,
-    required this.onTap,
-  });
+  const StationListRow({super.key, required this.station, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

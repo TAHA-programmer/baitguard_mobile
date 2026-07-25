@@ -6,12 +6,13 @@ import 'package:baitguard/data/repositories/mock/mock_dashboard_repository.dart'
 import 'package:baitguard/domain/models/user_role.dart';
 import 'package:baitguard/features/dashboard/view_models/admin_dashboard_view_model.dart';
 import 'package:baitguard/features/dashboard/view_models/user_dashboard_view_model.dart';
+import 'package:baitguard/domain/models/dashboard/admin_dashboard_data.dart';
 
 class _FailingDashboardRepository extends MockDashboardRepository {
   _FailingDashboardRepository(super.dataSource);
 
   @override
-  Future<dynamic> getAdminDashboard({
+  Future<AdminDashboardData> getAdminDashboard({
     required String adminId,
     String? siteId,
   }) async {
@@ -73,11 +74,6 @@ void main() {
 
     test('8. Failed facility change does NOT change the controller', () async {
       final failRepo = _FailingDashboardRepository(dataSource);
-      final vm = AdminDashboardViewModel(
-        dashboardRepository: failRepo,
-        sessionController: sessionController,
-        activeFacilityController: facilityController,
-      );
 
       // Load with a working repo first to get initial data
       final workingRepo = MockDashboardRepository(dataSource);

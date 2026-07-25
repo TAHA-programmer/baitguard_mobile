@@ -86,7 +86,10 @@ class FeaturedStationCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  _StationStatusBadge(status: station.status, isTampered: station.isTampered),
+                  _StationStatusBadge(
+                    status: station.status,
+                    isTampered: station.isTampered,
+                  ),
                 ],
               ),
             ),
@@ -216,7 +219,9 @@ class FeaturedStationCard extends StatelessWidget {
                 if (permissions.canSilence)
                   Expanded(
                     child: _ActionButton(
-                      label: station.notificationsMuted ? 'Unsilence' : 'Silence',
+                      label: station.notificationsMuted
+                          ? 'Unsilence'
+                          : 'Silence',
                       icon: station.notificationsMuted
                           ? Icons.notifications_active_outlined
                           : Icons.notifications_off_outlined,
@@ -244,11 +249,11 @@ class FeaturedStationCard extends StatelessWidget {
   }
 
   Widget _verticalDivider() => Container(
-        width: 1,
-        height: 60,
-        color: AppColors.divider.withValues(alpha: 0.6),
-        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-      );
+    width: 1,
+    height: 60,
+    color: AppColors.divider.withValues(alpha: 0.6),
+    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+  );
 
   Color _baitColor(double pct) {
     if (pct <= 25) return AppColors.criticalRed;

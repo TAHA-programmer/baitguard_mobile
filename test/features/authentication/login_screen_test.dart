@@ -92,9 +92,9 @@ void main() {
 
     // 11. Authentication screens are removed from the stack after success
     expect(find.byType(LoginScreen), findsNothing);
-    expect(
-      find.byType(BaitGaurdLogoMark),
-      findsNothing,
-    ); // Splash/Welcome logo gone
+    expect(find.byType(BaitGaurdLogoMark), findsNothing);
+
+    // Clear any timers or animations (e.g. from the newly mounted AdminAppShell and its tabs)
+    await tester.pumpAndSettle();
   });
 }

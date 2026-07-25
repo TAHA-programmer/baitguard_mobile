@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../app/state/app_session_controller.dart';
 import '../../../data/repositories/mock/mock_station_repository.dart'
-    show kLowBaitThreshold, stationIsLowBait, stationNeedsAttention, stationIsConnected;
+    show stationIsLowBait, stationNeedsAttention, stationIsConnected;
 import '../../../domain/models/detected_species.dart';
 import '../../../domain/models/detection_event.dart';
 import '../../../domain/models/station.dart';
@@ -73,9 +73,9 @@ class StationsViewModel extends ChangeNotifier {
     required StationRepository stationRepository,
     required AppSessionController sessionController,
     required ActiveFacilityController activeFacilityController,
-  })  : _stationRepository = stationRepository,
-        _sessionController = sessionController,
-        _facilityController = activeFacilityController {
+  }) : _stationRepository = stationRepository,
+       _sessionController = sessionController,
+       _facilityController = activeFacilityController {
     _facilityController.addListener(_onFacilityChanged);
   }
 
@@ -141,8 +141,7 @@ class StationsViewModel extends ChangeNotifier {
       // Load events for each station (use cache when available).
       for (final station in stations) {
         if (!_eventCache.containsKey(station.id)) {
-          final events =
-              await _stationRepository.getStationEvents(station.id);
+          final events = await _stationRepository.getStationEvents(station.id);
           _eventCache[station.id] = events;
         }
       }
@@ -270,8 +269,10 @@ class StationsViewModel extends ChangeNotifier {
       ).subtract(Duration(days: i));
       final dayEnd = dayStart.add(const Duration(days: 1));
       final count = events
-          .where((e) =>
-              e.timestamp.isAfter(dayStart) && e.timestamp.isBefore(dayEnd))
+          .where(
+            (e) =>
+                e.timestamp.isAfter(dayStart) && e.timestamp.isBefore(dayEnd),
+          )
           .length;
       sevenDayActivity.add(
         StationActivityPoint(timestamp: dayStart, detections: count),

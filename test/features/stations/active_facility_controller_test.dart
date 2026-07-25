@@ -8,8 +8,10 @@ void main() {
         permittedSiteIds: ['site_1', 'site_2'],
       );
       expect(controller.permittedSiteIds, ['site_1', 'site_2']);
-      expect(() => (controller.permittedSiteIds as dynamic).add('site_3'),
-          throwsUnsupportedError);
+      expect(
+        () => (controller.permittedSiteIds as dynamic).add('site_3'),
+        throwsUnsupportedError,
+      );
     });
 
     test('2. selects the first permitted site by default', () {
@@ -43,9 +45,7 @@ void main() {
     });
 
     test('3. rejects unauthorized site IDs', () {
-      final controller = ActiveFacilityController(
-        permittedSiteIds: ['site_1'],
-      );
+      final controller = ActiveFacilityController(permittedSiteIds: ['site_1']);
       final result = controller.selectSite('site_99');
       expect(result, isFalse);
       expect(controller.selectedSiteId, 'site_1');

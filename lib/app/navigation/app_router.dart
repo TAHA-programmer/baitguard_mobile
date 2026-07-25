@@ -91,15 +91,17 @@ class AppRouter {
                   sessionController: session,
                 )..load(),
               ),
-              ChangeNotifierProxyProvider<ActiveFacilityController,
-                  StationsViewModel>(
+              ChangeNotifierProxyProvider<
+                ActiveFacilityController,
+                StationsViewModel
+              >(
                 create: (ctx) => StationsViewModel(
                   stationRepository: context.read<StationRepository>(),
                   sessionController: session,
-                  activeFacilityController:
-                      ctx.read<ActiveFacilityController>(),
+                  activeFacilityController: ctx
+                      .read<ActiveFacilityController>(),
                 ),
-                update: (_, __, previous) => previous!,
+                update: (context, controller, previous) => previous!,
               ),
             ],
             child: const UserAppShell(),
@@ -123,25 +125,29 @@ class AppRouter {
                   permittedSiteIds: List<String>.unmodifiable(permittedSiteIds),
                 ),
               ),
-              ChangeNotifierProxyProvider<ActiveFacilityController,
-                  AdminDashboardViewModel>(
+              ChangeNotifierProxyProvider<
+                ActiveFacilityController,
+                AdminDashboardViewModel
+              >(
                 create: (ctx) => AdminDashboardViewModel(
                   dashboardRepository: context.read<DashboardRepository>(),
                   sessionController: session,
-                  activeFacilityController:
-                      ctx.read<ActiveFacilityController>(),
+                  activeFacilityController: ctx
+                      .read<ActiveFacilityController>(),
                 )..load(),
-                update: (_, __, previous) => previous!,
+                update: (context, controller, previous) => previous!,
               ),
-              ChangeNotifierProxyProvider<ActiveFacilityController,
-                  StationsViewModel>(
+              ChangeNotifierProxyProvider<
+                ActiveFacilityController,
+                StationsViewModel
+              >(
                 create: (ctx) => StationsViewModel(
                   stationRepository: context.read<StationRepository>(),
                   sessionController: session,
-                  activeFacilityController:
-                      ctx.read<ActiveFacilityController>(),
+                  activeFacilityController: ctx
+                      .read<ActiveFacilityController>(),
                 ),
-                update: (_, __, previous) => previous!,
+                update: (context, controller, previous) => previous!,
               ),
             ],
             child: const AdminAppShell(),

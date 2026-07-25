@@ -36,8 +36,7 @@ StationsViewModel _makeVm({
   StationRepository? repository,
 }) {
   return StationsViewModel(
-    stationRepository:
-        repository ?? MockStationRepository(dataSource),
+    stationRepository: repository ?? MockStationRepository(dataSource),
     sessionController: sessionController,
     activeFacilityController: facilityController,
   );
@@ -81,8 +80,9 @@ void main() {
 
     test('12. Missing session fails safely', () async {
       // Don't log in
-      facilityController =
-          ActiveFacilityController(permittedSiteIds: ['site_1']);
+      facilityController = ActiveFacilityController(
+        permittedSiteIds: ['site_1'],
+      );
       final vm = _makeVm(
         dataSource: dataSource,
         sessionController: sessionController, // No user
@@ -96,11 +96,11 @@ void main() {
     });
 
     test('13. Empty site access fails safely', () async {
-      final inactiveUser =
-          dataSource.users.firstWhere((u) => u.siteAccessIds.isEmpty);
+      final inactiveUser = dataSource.users.firstWhere(
+        (u) => u.siteAccessIds.isEmpty,
+      );
       sessionController.establishSession(inactiveUser);
-      facilityController =
-          ActiveFacilityController(permittedSiteIds: []);
+      facilityController = ActiveFacilityController(permittedSiteIds: []);
 
       final vm = _makeVm(
         dataSource: dataSource,
@@ -240,10 +240,14 @@ void main() {
 
       await vm.load();
 
-      expect(() => (vm.allStations as dynamic).add(null),
-          throwsUnsupportedError);
-      expect(() => (vm.filteredStations as dynamic).add(null),
-          throwsUnsupportedError);
+      expect(
+        () => (vm.allStations as dynamic).add(vm.allStations.first),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => (vm.filteredStations as dynamic).add(vm.allStations.first),
+        throwsUnsupportedError,
+      );
     });
   });
 
@@ -279,11 +283,11 @@ void main() {
     test('24. Alerts filter returns attention-requiring stations', () {
       vm.setFilter(StationListFilter.alerts);
       for (final s in vm.filteredStations) {
-        final needsAttention = s.status == StationStatus.alert ||
+        final needsAttention =
+            s.status == StationStatus.alert ||
             s.status == StationStatus.offline ||
             s.isTampered;
-        expect(needsAttention, isTrue,
-            reason: '${s.id} should need attention');
+        expect(needsAttention, isTrue, reason: '${s.id} should need attention');
       }
     });
 
@@ -304,13 +308,16 @@ void main() {
     test('27. Search and filter combine correctly', () {
       vm.setFilter(StationListFilter.alerts);
       vm.setSearchQuery('RB-07');
-      expect(vm.filteredStations.every(
-        (s) =>
-            s.id.toLowerCase().contains('rb-07') &&
-            (s.status == StationStatus.alert ||
-                s.status == StationStatus.offline ||
-                s.isTampered),
-      ), isTrue);
+      expect(
+        vm.filteredStations.every(
+          (s) =>
+              s.id.toLowerCase().contains('rb-07') &&
+              (s.status == StationStatus.alert ||
+                  s.status == StationStatus.offline ||
+                  s.isTampered),
+        ),
+        isTrue,
+      );
     });
 
     test('28. No-result state clears featured station', () {
@@ -337,11 +344,6 @@ void main() {
   group('StationsViewModel — Permissions', () {
     test('30. Admin permissions are correct', () {
       loginAs(UserRole.admin);
-      final vm = _makeVm(
-        dataSource: dataSource,
-        sessionController: sessionController,
-        facilityController: facilityController,
-      );
       // Permissions are resolved on load, but we can test the static factory
       final perms = StationPermissions.fromRole(UserRole.admin);
       expect(perms.canAddStation, isTrue);
@@ -415,20 +417,23 @@ void main() {
       expect(refreshed?.baitPercentage, 100.0);
     });
 
-    test('36. Refill preserves alert/tamper state (non-lowBait station)', () async {
-      final alertStation = vmAdmin.allStations.firstWhere(
-        (s) => s.status == StationStatus.alert,
-      );
-      final originalStatus = alertStation.status;
+    test(
+      '36. Refill preserves alert/tamper state (non-lowBait station)',
+      () async {
+        final alertStation = vmAdmin.allStations.firstWhere(
+          (s) => s.status == StationStatus.alert,
+        );
+        final originalStatus = alertStation.status;
 
-      await vmAdmin.refillStation(alertStation.id);
+        await vmAdmin.refillStation(alertStation.id);
 
-      final updated = vmAdmin.allStations.firstWhere(
-        (s) => s.id == alertStation.id,
-      );
-      expect(updated.baitPercentage, 100.0);
-      expect(updated.status, originalStatus); // Alert preserved
-    });
+        final updated = vmAdmin.allStations.firstWhere(
+          (s) => s.id == alertStation.id,
+        );
+        expect(updated.baitPercentage, 100.0);
+        expect(updated.status, originalStatus); // Alert preserved
+      },
+    );
 
     test('37. Silence persists notificationsMuted', () async {
       final station = vmAdmin.allStations.first;
@@ -436,8 +441,7 @@ void main() {
 
       await vmAdmin.toggleSilenceStation(station.id);
 
-      final updated =
-          vmAdmin.allStations.firstWhere((s) => s.id == station.id);
+      final updated = vmAdmin.allStations.firstWhere((s) => s.id == station.id);
       expect(updated.notificationsMuted, isTrue);
     });
 
@@ -449,8 +453,7 @@ void main() {
 
       await vmAdmin.toggleSilenceStation(station.id);
 
-      final updated =
-          vmAdmin.allStations.firstWhere((s) => s.id == station.id);
+      final updated = vmAdmin.allStations.firstWhere((s) => s.id == station.id);
       expect(updated.status, originalStatus);
     });
 
@@ -463,8 +466,7 @@ void main() {
       await Future.wait([f1, f2]);
 
       // The mutation should have happened once — bait is 100
-      final updated =
-          vmAdmin.allStations.firstWhere((s) => s.id == station.id);
+      final updated = vmAdmin.allStations.firstWhere((s) => s.id == station.id);
       expect(updated.baitPercentage, 100.0);
     });
 
@@ -478,14 +480,12 @@ void main() {
       await vmViewer.load();
 
       final stationId = vmViewer.allStations.first.id;
-      final originalBait =
-          vmViewer.allStations.first.baitPercentage;
+      final originalBait = vmViewer.allStations.first.baitPercentage;
 
       await vmViewer.refillStation(stationId);
 
       // Bait should be unchanged
-      final after =
-          vmViewer.allStations.firstWhere((s) => s.id == stationId);
+      final after = vmViewer.allStations.firstWhere((s) => s.id == stationId);
       expect(after.baitPercentage, originalBait);
     });
   });
@@ -501,8 +501,10 @@ void main() {
       await vm.load();
 
       expect(vm.totalCount, vm.allStations.length);
-      expect(vm.activeCount,
-          vm.allStations.where((s) => s.status != StationStatus.offline).length);
+      expect(
+        vm.activeCount,
+        vm.allStations.where((s) => s.status != StationStatus.offline).length,
+      );
     });
   });
 

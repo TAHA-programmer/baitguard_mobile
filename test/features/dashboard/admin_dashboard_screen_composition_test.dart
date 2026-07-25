@@ -53,6 +53,15 @@ class MockAdminDashboardViewModel extends ChangeNotifier
   @override
   get sessionController => throw UnimplementedError();
 
+  @override
+  get activeFacilityController => throw UnimplementedError();
+
+  @override
+  int facilityErrorEventId = 0;
+
+  @override
+  String? facilityErrorMessage;
+
   AdminDashboardData? _data;
 
   @override
