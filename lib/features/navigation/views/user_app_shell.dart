@@ -7,6 +7,7 @@ import '../../dashboard/views/user_dashboard_screen.dart';
 import '../../stations/navigation/stations_flow_navigator.dart';
 import '../widgets/authenticated_bottom_navigation.dart';
 import 'pending_feature_tab.dart';
+import '../../alerts/navigation/alerts_flow_navigator.dart';
 
 class UserAppShell extends StatefulWidget {
   const UserAppShell({super.key});
@@ -46,12 +47,8 @@ class _UserAppShellState extends State<UserAppShell> {
             UserDashboardScreen(onSelectTab: _onTabTapped),
             // Screen 08 — Stations nested flow
             const StationsFlowNavigator(),
-            // TODO: Replace with full Alerts screen (Screen 09).
-            const PendingFeatureTab(
-              title: 'Alerts',
-              icon: Icons.notifications_outlined,
-              message: 'Alert management will be available here shortly.',
-            ),
+            // Screen 09 — Alerts nested flow
+            const AlertsFlowNavigator(),
             const PendingFeatureTab(
               title: 'Reports',
               icon: Icons.insert_chart_outlined,

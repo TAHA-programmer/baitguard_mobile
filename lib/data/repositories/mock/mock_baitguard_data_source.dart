@@ -294,6 +294,7 @@ class MockBaitGuardDataSource {
           timestamp: now.subtract(const Duration(hours: 2)),
           species: DetectedSpecies.rat,
           confidenceScore: 0.96,
+          alertId: 'alert_1',
         ),
         DetectionEvent(
           id: 'evt_rb07_2',
@@ -395,6 +396,7 @@ class MockBaitGuardDataSource {
           timestamp: now.subtract(const Duration(days: 1, hours: 1)),
           species: DetectedSpecies.rat,
           confidenceScore: 0.95,
+          alertId: 'alert_3',
         ),
         DetectionEvent(
           id: 'evt_rb12_2',
@@ -533,5 +535,14 @@ class MockBaitGuardDataSource {
 
     _stations.add(newStation);
     return newStation;
+  }
+
+  Alert updateAlert(Alert updatedAlert) {
+    final index = _alerts.indexWhere((a) => a.id == updatedAlert.id);
+    if (index == -1) {
+      throw StateError('Alert not found: ${updatedAlert.id}');
+    }
+    _alerts[index] = updatedAlert;
+    return updatedAlert;
   }
 }

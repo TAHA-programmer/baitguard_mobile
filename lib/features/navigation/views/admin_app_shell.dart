@@ -8,6 +8,7 @@ import '../../stations/navigation/stations_flow_navigator.dart';
 import '../models/admin_alert_list_preset.dart';
 import '../widgets/authenticated_bottom_navigation.dart';
 import 'pending_feature_tab.dart';
+import '../../alerts/navigation/alerts_flow_navigator.dart';
 
 class AdminAppShell extends StatefulWidget {
   const AdminAppShell({super.key});
@@ -65,13 +66,8 @@ class _AdminAppShellState extends State<AdminAppShell> {
             AdminDashboardScreen(onSelectTab: switchTab),
             // Screen 08 — Stations nested flow
             const StationsFlowNavigator(),
-            // TODO: Replace with full Alerts screen (Screen 09).
-            // Use _alertPreset when the Alerts screen is implemented.
-            const PendingFeatureTab(
-              title: 'Alerts',
-              icon: Icons.notifications_outlined,
-              message: 'Alert management will be available here shortly.',
-            ),
+            // Screen 09 — Alerts nested flow
+            AlertsFlowNavigator(initialPreset: _alertPreset),
             const PendingFeatureTab(
               title: 'Reports',
               icon: Icons.insert_chart_outlined,

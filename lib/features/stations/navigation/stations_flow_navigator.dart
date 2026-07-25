@@ -7,7 +7,11 @@ import '../view_models/station_detail_view_model.dart';
 import '../view_models/add_station_view_model.dart';
 import '../../../domain/repositories/station_repository.dart';
 import '../../../app/state/active_facility_controller.dart';
+import '../../../app/state/app_session_controller.dart';
 import '../../../domain/models/site.dart';
+import '../../alerts/view_models/alert_detail_view_model.dart';
+import '../../alerts/views/alert_detail_screen.dart';
+import '../../../domain/repositories/alert_repository.dart';
 
 /// Nested navigator for the Stations tab flow.
 ///
@@ -62,6 +66,19 @@ class _StationsFlowNavigatorState extends State<StationsFlowNavigator> {
                 );
               },
               child: const AddStationScreen(),
+            );
+            break;
+          case '/alert-detail':
+            final alertId = settings.arguments as String;
+            builder = ChangeNotifierProvider(
+              create: (ctx) => AlertDetailViewModel(
+                alertId: alertId,
+                alertRepository: ctx.read<AlertRepository>(),
+                stationRepository: ctx.read<StationRepository>(),
+                sessionController: ctx.read<AppSessionController>(),
+                activeFacilityController: ctx.read<ActiveFacilityController>(),
+              ),
+              child: const AlertDetailScreen(),
             );
             break;
           default:

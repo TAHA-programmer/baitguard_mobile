@@ -35,6 +35,11 @@ class AppStatusBadge extends StatelessWidget {
         textColor = AppColors.successGreen;
         text = 'Resolved';
         break;
+      case AlertStatus.dismissed:
+        backgroundColor = AppColors.borderSecondary;
+        textColor = AppColors.textSecondary;
+        text = 'Dismissed';
+        break;
     }
 
     return Container(

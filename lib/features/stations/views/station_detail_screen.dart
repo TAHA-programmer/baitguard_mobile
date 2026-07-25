@@ -510,7 +510,11 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
 
     return InkWell(
       onTap: () {
-        AppTopToast.show(context, 'Alert details will be available shortly.');
+        if (event.alertId != null) {
+          Navigator.of(context).pushNamed('/alert-detail', arguments: event.alertId);
+        } else {
+          AppTopToast.show(context, 'This event does not have an associated alert.');
+        }
       },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,

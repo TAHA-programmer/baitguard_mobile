@@ -1,5 +1,5 @@
 import '../../../domain/models/alert.dart';
-import '../../../domain/models/alert_type.dart';
+import '../../../domain/models/alert_status.dart';
 import '../../../domain/repositories/alert_repository.dart';
 import 'mock_baitguard_data_source.dart';
 
@@ -9,28 +9,96 @@ class MockAlertRepository implements AlertRepository {
   MockAlertRepository(this._dataSource);
 
   @override
-  Future<List<Alert>> getAlerts({AlertType? filterType}) async {
+  Future<List<Alert>> getAlerts({required String siteId}) async {
     await Future.delayed(const Duration(milliseconds: 600));
-    var alerts = _dataSource.alerts;
-    if (filterType != null) {
-      alerts = alerts.where((a) => a.type == filterType).toList();
-    }
-    return alerts;
+    
+    // Find all stations for the site
+    final siteStationIds = _dataSource.stations
+        .where((s) => s.siteId == siteId)
+        .map((s) => s.id)
+        .toSet();
+
+    // Return alerts for those stations
+    return _dataSource.alerts
+        .where((a) => siteStationIds.contains(a.stationId))
+        .toList();
   }
 
   @override
-  Future<Alert?> getAlertById(String id) async {
+  Future<Alert> getAlertById(String id) async {
     await Future.delayed(const Duration(milliseconds: 300));
     try {
       return _dataSource.alerts.firstWhere((a) => a.id == id);
     } catch (_) {
-      return null;
+      throw StateError('Alert not found');
     }
+  }
+  
+  @override
+  Future<Alert> markAlertRead({required String alertId}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final alert = await getAlertById(alertId);
+    if (alert.isRead) return alert;
+    return _dataSource.updateAlert(alert.copyWith(isRead: true));
   }
 
   @override
-  Future<void> resolveAlert(String alertId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    // No-op for mock, unless we want to track it
+  Future<Alert> resolveAlert({
+    required String alertId,
+    required String resolvedByUserId,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final alert = await getAlertById(alertId);
+    return _dataSource.updateAlert(
+      alert.copyWith(
+        status: AlertStatus.resolved,
+        resolvedAt: DateTime.now(),
+        resolvedByUserId: resolvedByUserId,
+      ),
+    );
+  }
+  
+  @override
+  Future<Alert> snoozeAlert({
+    required String alertId,
+    required DateTime until,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final alert = await getAlertById(alertId);
+    return _dataSource.updateAlert(
+      alert.copyWith(
+        snoozedUntil: until,
+      ),
+    );
+  }
+  
+  @override
+  Future<Alert> assignAlert({
+    required String alertId,
+    required String technicianId,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final alert = await getAlertById(alertId);
+    return _dataSource.updateAlert(
+      alert.copyWith(
+        assignedTechnicianId: technicianId,
+      ),
+    );
+  }
+  
+  @override
+  Future<Alert> dismissAlert({
+    required String alertId,
+    required String dismissedByUserId,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final alert = await getAlertById(alertId);
+    return _dataSource.updateAlert(
+      alert.copyWith(
+        status: AlertStatus.dismissed,
+        dismissedAt: DateTime.now(),
+        dismissedByUserId: dismissedByUserId,
+      ),
+    );
   }
 }

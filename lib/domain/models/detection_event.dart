@@ -10,6 +10,7 @@ class DetectionEvent {
   final double confidenceScore;
   final String? evidenceImageUrl;
   final DetectionEventStatus status;
+  final String? alertId;
 
   const DetectionEvent({
     required this.id,
@@ -19,5 +20,6 @@ class DetectionEvent {
     required this.confidenceScore,
     this.evidenceImageUrl,
     this.status = DetectionEventStatus.open,
+    this.alertId,
   });
 }

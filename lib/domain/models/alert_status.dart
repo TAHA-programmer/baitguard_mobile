@@ -1,1 +1,1 @@
-enum AlertStatus { open, pending, inReview, resolved }
+enum AlertStatus { open, pending, inReview, resolved, dismissed }
