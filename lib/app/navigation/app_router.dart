@@ -20,6 +20,12 @@ import '../../features/dashboard/view_models/user_dashboard_view_model.dart';
 import '../../features/navigation/views/admin_app_shell.dart';
 import '../../features/dashboard/view_models/admin_dashboard_view_model.dart';
 import '../../features/stations/view_models/stations_view_model.dart';
+import '../../features/settings/views/settings_screen.dart';
+import '../../features/settings/views/edit_profile_screen.dart';
+import '../../features/settings/view_models/settings_view_model.dart';
+import '../../features/settings/view_models/edit_profile_view_model.dart';
+import '../../domain/repositories/settings_repository.dart';
+import '../../domain/repositories/user_repository.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -151,6 +157,50 @@ class AppRouter {
               ),
             ],
             child: const AdminAppShell(),
+          );
+        },
+      );
+    }
+
+    if (settings.name == RouteNames.settings) {
+      final activeFacilityController =
+          settings.arguments as ActiveFacilityController;
+      return MaterialPageRoute(
+        settings: settings,
+        builder: (context) {
+          final session = context.read<AppSessionController>();
+          return MultiProvider(
+            providers: [
+              ChangeNotifierProvider<ActiveFacilityController>.value(
+                value: activeFacilityController,
+              ),
+              ChangeNotifierProvider<SettingsViewModel>(
+                create: (_) => SettingsViewModel(
+                  settingsRepository: context.read<SettingsRepository>(),
+                  sessionController: session,
+                  activeFacilityController: activeFacilityController,
+                ),
+              ),
+            ],
+            child: const SettingsScreen(),
+          );
+        },
+      );
+    }
+
+    if (settings.name == RouteNames.editProfile) {
+      // Arguments: the AppSessionController is globally available;
+      // UserRepository is globally provided — no extra args needed.
+      return MaterialPageRoute(
+        settings: settings,
+        builder: (context) {
+          final session = context.read<AppSessionController>();
+          return ChangeNotifierProvider<EditProfileViewModel>(
+            create: (_) => EditProfileViewModel(
+              userRepository: context.read<UserRepository>(),
+              sessionController: session,
+            ),
+            child: const EditProfileScreen(),
           );
         },
       );

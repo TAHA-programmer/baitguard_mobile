@@ -1,10 +1,12 @@
-import '../models/report.dart';
+import '../models/report_models.dart';
 
 abstract class ReportRepository {
-  Future<List<Report>> getReports();
-  Future<Report> generateReport(
-    String type,
-    DateTime startDate,
-    DateTime endDate,
-  );
+  Future<ReportsDashboardData> getDashboardData({
+    required String siteId,
+    required ReportPeriod period,
+  });
+
+  Future<ReportExport> generateReport(ReportGenerationRequest request);
+
+  Future<List<ReportExport>> getRecentExports({required String siteId});
 }

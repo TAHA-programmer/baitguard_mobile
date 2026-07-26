@@ -24,7 +24,9 @@ void main() {
       stationRepository = MockStationRepository(dataSource);
       sessionController = AppSessionController();
 
-      final adminUser = dataSource.users.firstWhere((u) => u.role == UserRole.admin);
+      final adminUser = dataSource.users.firstWhere(
+        (u) => u.role == UserRole.admin,
+      );
       sessionController.establishSession(adminUser);
       activeFacilityController = ActiveFacilityController(
         permittedSiteIds: adminUser.siteAccessIds,
@@ -39,14 +41,13 @@ void main() {
         sessionController: sessionController,
         activeFacilityController: activeFacilityController,
       );
-      
-      
+
       // Wait for load
       await vm.refresh();
-      
+
       final initialUnresolved = vm.unresolvedCount;
       expect(initialUnresolved, greaterThan(0));
-      
+
       final detailVm = AlertDetailViewModel(
         alertId: 'alert_1',
         alertRepository: alertRepository,
@@ -54,15 +55,15 @@ void main() {
         sessionController: sessionController,
         activeFacilityController: activeFacilityController,
       );
-      
+
       // await initialization
       await Future.delayed(const Duration(milliseconds: 300));
-      
+
       await detailVm.resolveAlert();
       expect(detailVm.lastUpdatedAlert, isNotNull);
-      
+
       vm.applyUpdatedAlert(detailVm.lastUpdatedAlert!);
-      
+
       expect(vm.unresolvedCount, initialUnresolved - 1);
     });
   });

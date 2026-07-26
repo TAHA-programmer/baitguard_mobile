@@ -7,6 +7,8 @@ import '../../../app/theme/app_typography.dart';
 import '../../../core/widgets/app_error_state.dart';
 import '../../../core/widgets/app_loading_state.dart';
 import '../../../core/widgets/app_top_toast.dart';
+import '../../../app/navigation/route_names.dart';
+import '../../../app/state/active_facility_controller.dart';
 import '../view_models/user_dashboard_view_model.dart';
 import '../widgets/activity_chart_card.dart';
 import '../widgets/facility_map_card.dart';
@@ -142,12 +144,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                       Row(
                         children: [
                           GestureDetector(
-                            onTap: () {
-                              AppTopToast.show(
-                                context,
-                                'Notification Center will be available soon.',
-                              );
-                            },
+                            onTap: () => widget.onSelectTab(2),
                             child: Semantics(
                               label: 'Notification Button',
                               button: true,
@@ -195,9 +192,13 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                           const SizedBox(width: AppSpacing.md),
                           GestureDetector(
                             onTap: () {
-                              AppTopToast.show(
+                              Navigator.of(
                                 context,
-                                'User Profile will be available soon.',
+                                rootNavigator: true,
+                              ).pushNamed(
+                                RouteNames.settings,
+                                arguments: context
+                                    .read<ActiveFacilityController>(),
                               );
                             },
                             child: Semantics(
@@ -254,9 +255,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                     onMap: () => widget.onSelectTab(1),
                     onReport: () => widget.onSelectTab(3),
                     onSettings: () {
-                      AppTopToast.show(
-                        context,
-                        'Settings will be available soon.',
+                      Navigator.of(context, rootNavigator: true).pushNamed(
+                        RouteNames.settings,
+                        arguments: context.read<ActiveFacilityController>(),
                       );
                     },
                   ),

@@ -6,6 +6,8 @@ class RouteNames {
   static const String requestSubmitted = '/request-submitted';
   static const String userDashboard = '/user-dashboard';
   static const String adminDashboard = '/admin-dashboard';
+  static const String settings = '/settings';
+  static const String editProfile = '/edit-profile';
 
   // Legacy Dashboard
   static const String legacy = '/legacy';

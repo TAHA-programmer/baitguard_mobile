@@ -21,11 +21,19 @@ class StationsFlowNavigator extends StatefulWidget {
   const StationsFlowNavigator({super.key});
 
   @override
-  State<StationsFlowNavigator> createState() => _StationsFlowNavigatorState();
+  State<StationsFlowNavigator> createState() => StationsFlowNavigatorState();
 }
 
-class _StationsFlowNavigatorState extends State<StationsFlowNavigator> {
-  final _navigatorKey = GlobalKey<NavigatorState>();
+class StationsFlowNavigatorState extends State<StationsFlowNavigator> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  void openStationDetail(String stationId) {
+    _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+    _navigatorKey.currentState?.pushNamed(
+      '/station-detail',
+      arguments: stationId,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

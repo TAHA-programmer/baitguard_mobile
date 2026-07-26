@@ -53,7 +53,10 @@ class AppProviders {
       create: (context) =>
           MockDashboardRepository(context.read<MockBaitGuardDataSource>()),
     ),
-    Provider<SettingsRepository>(create: (_) => MockSettingsRepository()),
+    Provider<SettingsRepository>(
+      create: (context) =>
+          MockSettingsRepository(context.read<MockBaitGuardDataSource>()),
+    ),
     ChangeNotifierProvider<AppSessionController>(
       create: (_) => AppSessionController(),
     ),

@@ -32,7 +32,9 @@ void main() {
       sessionController = AppSessionController();
 
       // Default to admin
-      final adminUser = dataSource.users.firstWhere((u) => u.role == UserRole.admin);
+      final adminUser = dataSource.users.firstWhere(
+        (u) => u.role == UserRole.admin,
+      );
       sessionController.establishSession(adminUser);
       activeFacilityController = ActiveFacilityController(
         permittedSiteIds: adminUser.siteAccessIds,
@@ -236,6 +238,9 @@ void main() {
       );
 
       await tester.pumpAndSettle();
+      // Swallow the expected AssetImage-not-found error —
+      // assets are not bundled in the test environment.
+      tester.takeException();
 
       expect(find.text('Evidence'), findsOneWidget);
       expect(find.text('Captured evidence is unavailable.'), findsNothing);
@@ -256,7 +261,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(); // render first frame; no fake-clock advance
 
       expect(find.text('Evidence'), findsOneWidget);
       expect(find.text('Captured evidence is unavailable.'), findsOneWidget);
@@ -274,7 +279,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(); // render first frame; no fake-clock advance
 
       expect(find.text('Evidence'), findsNothing);
     });

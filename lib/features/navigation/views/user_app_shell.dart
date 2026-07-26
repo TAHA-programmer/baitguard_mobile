@@ -5,8 +5,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../dashboard/view_models/user_dashboard_view_model.dart';
 import '../../dashboard/views/user_dashboard_screen.dart';
 import '../../stations/navigation/stations_flow_navigator.dart';
+import '../../reports/navigation/reports_flow_navigator.dart';
 import '../widgets/authenticated_bottom_navigation.dart';
-import 'pending_feature_tab.dart';
 import '../../alerts/navigation/alerts_flow_navigator.dart';
 
 class UserAppShell extends StatefulWidget {
@@ -19,6 +19,8 @@ class UserAppShell extends StatefulWidget {
 class _UserAppShellState extends State<UserAppShell> {
   final GlobalKey<AlertsFlowNavigatorState> _alertsNavigatorKey =
       GlobalKey<AlertsFlowNavigatorState>();
+  final GlobalKey<StationsFlowNavigatorState> _stationsNavigatorKey =
+      GlobalKey<StationsFlowNavigatorState>();
   int _currentIndex = 0;
 
   void _onTabTapped(int index) {
@@ -66,13 +68,21 @@ class _UserAppShellState extends State<UserAppShell> {
               onAlertTap: openAlertDetail,
             ),
             // Screen 08 — Stations nested flow
-            const StationsFlowNavigator(),
+            StationsFlowNavigator(key: _stationsNavigatorKey),
             // Screen 09 — Alerts nested flow
             AlertsFlowNavigator(key: _alertsNavigatorKey),
-            const PendingFeatureTab(
-              title: 'Reports',
-              icon: Icons.insert_chart_outlined,
-              message: 'Reporting tools will be available here shortly.',
+            // Screen 14 - Reports nested flow
+            ReportsFlowNavigator(
+              onStationTap: (stationId) {
+                setState(() {
+                  _currentIndex = 1;
+                });
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _stationsNavigatorKey.currentState?.openStationDetail(
+                    stationId,
+                  );
+                });
+              },
             ),
           ],
         ),

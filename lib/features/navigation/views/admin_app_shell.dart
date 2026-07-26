@@ -5,9 +5,9 @@ import '../../../app/theme/app_colors.dart';
 import '../../dashboard/view_models/admin_dashboard_view_model.dart';
 import '../../dashboard/views/admin_dashboard_screen.dart';
 import '../../stations/navigation/stations_flow_navigator.dart';
+import '../../reports/navigation/reports_flow_navigator.dart';
 import '../models/admin_alert_list_preset.dart';
 import '../widgets/authenticated_bottom_navigation.dart';
-import 'pending_feature_tab.dart';
 import '../../alerts/navigation/alerts_flow_navigator.dart';
 
 class AdminAppShell extends StatefulWidget {
@@ -18,10 +18,12 @@ class AdminAppShell extends StatefulWidget {
 }
 
 class _AdminAppShellState extends State<AdminAppShell> {
-  final GlobalKey<AlertsFlowNavigatorState> _alertsNavigatorKey =
-      GlobalKey<AlertsFlowNavigatorState>();
   int _currentIndex = 0;
   AdminAlertListPreset _alertPreset = AdminAlertListPreset.all;
+  final GlobalKey<AlertsFlowNavigatorState> _alertsNavigatorKey =
+      GlobalKey<AlertsFlowNavigatorState>();
+  final GlobalKey<StationsFlowNavigatorState> _stationsNavigatorKey =
+      GlobalKey<StationsFlowNavigatorState>();
 
   void _onTabTapped(int index) {
     if (_currentIndex == index) {
@@ -91,17 +93,25 @@ class _AdminAppShellState extends State<AdminAppShell> {
               onSelectTab: switchTab,
               onAlertTap: openAlertDetail,
             ),
-            // Screen 08 — Stations nested flow
-            const StationsFlowNavigator(),
-            // Screen 09 — Alerts nested flow
+            // Screen 08 - Stations nested flow
+            StationsFlowNavigator(key: _stationsNavigatorKey),
+            // Screen 09 - Alerts nested flow
             AlertsFlowNavigator(
               key: _alertsNavigatorKey,
               initialPreset: _alertPreset,
             ),
-            const PendingFeatureTab(
-              title: 'Reports',
-              icon: Icons.insert_chart_outlined,
-              message: 'Reporting tools will be available here shortly.',
+            // Screen 14 - Reports nested flow
+            ReportsFlowNavigator(
+              onStationTap: (stationId) {
+                setState(() {
+                  _currentIndex = 1;
+                });
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _stationsNavigatorKey.currentState?.openStationDetail(
+                    stationId,
+                  );
+                });
+              },
             ),
           ],
         ),

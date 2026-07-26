@@ -22,4 +22,10 @@ class MockUserRepository implements UserRepository {
       return null;
     }
   }
+
+  @override
+  Future<void> updateUser(AppUser user) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    _dataSource.updateUser(user);
+  }
 }

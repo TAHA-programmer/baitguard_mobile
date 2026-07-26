@@ -8,10 +8,12 @@ import '../../../domain/models/app_user.dart';
 import '../../../domain/models/detected_species.dart';
 import '../../../domain/models/detection_event.dart';
 import '../../../domain/models/register_station_request.dart';
+import '../../../domain/models/report_models.dart';
 import '../../../domain/models/site.dart';
 import '../../../domain/models/station.dart';
 import '../../../domain/models/station_status.dart';
 import '../../../domain/models/user_role.dart';
+import '../../../domain/models/user_settings.dart';
 import 'mock_deployment_snapshot.dart';
 
 class MockBaitGuardDataSource {
@@ -23,6 +25,8 @@ class MockBaitGuardDataSource {
   final List<Alert> _alerts = [];
   final List<AccessRequestRecord> _accessRequests = [];
   final List<DetectionEvent> _detectionEvents = [];
+  final List<ReportExport> _reportExports = [];
+  final Map<String, UserSettings> _userSettings = {};
 
   int _nextAccessRequestNumber = 1;
 
@@ -34,6 +38,7 @@ class MockBaitGuardDataSource {
     List<Alert>? alerts,
     List<AccessRequestRecord>? accessRequests,
     List<DetectionEvent>? detectionEvents,
+    List<ReportExport>? reportExports,
   }) {
     if (sites != null) _sites.addAll(sites);
     if (users != null) _users.addAll(users);
@@ -41,6 +46,7 @@ class MockBaitGuardDataSource {
     if (alerts != null) _alerts.addAll(alerts);
     if (accessRequests != null) _accessRequests.addAll(accessRequests);
     if (detectionEvents != null) _detectionEvents.addAll(detectionEvents);
+    if (reportExports != null) _reportExports.addAll(reportExports);
 
     int highestReqId = 0;
     for (final req in _accessRequests) {
@@ -452,6 +458,47 @@ class MockBaitGuardDataSource {
           alertId: 'alert_7',
         ),
       ],
+      reportExports: [
+        ReportExport(
+          id: 'export_mock_1',
+          siteId: 'site_1',
+          templateType: ReportTemplateType.complianceAudit,
+          format: ReportFileFormat.pdf,
+          title: 'Compliance Audit Report',
+          fileName: 'Compliance_Audit_Q2.pdf',
+          fileSizeBytes: 2400000,
+          generatedAt: now.subtract(const Duration(days: 2)),
+          period: ReportPeriod(type: ReportPeriodType.quarter, anchorDate: now),
+        ),
+        ReportExport(
+          id: 'export_mock_2',
+          siteId: 'site_1',
+          templateType: ReportTemplateType.baitConsumption,
+          format: ReportFileFormat.csv,
+          title: 'Bait Consumption Report',
+          fileName: 'Bait_Consumption_May.csv',
+          fileSizeBytes: 84000,
+          generatedAt: now.subtract(const Duration(days: 12)),
+          period: ReportPeriod(
+            type: ReportPeriodType.month,
+            anchorDate: now.subtract(const Duration(days: 30)),
+          ),
+        ),
+        ReportExport(
+          id: 'export_mock_3',
+          siteId: 'site_1',
+          templateType: ReportTemplateType.monthlyActivity,
+          format: ReportFileFormat.pdf,
+          title: 'Monthly Activity Report',
+          fileName: 'Monthly_Activity_Apr.pdf',
+          fileSizeBytes: 1800000,
+          generatedAt: now.subtract(const Duration(days: 42)),
+          period: ReportPeriod(
+            type: ReportPeriodType.month,
+            anchorDate: now.subtract(const Duration(days: 60)),
+          ),
+        ),
+      ],
     );
   }
 
@@ -464,12 +511,31 @@ class MockBaitGuardDataSource {
       List.unmodifiable(_accessRequests);
   List<DetectionEvent> get detectionEvents =>
       List.unmodifiable(_detectionEvents);
+  List<ReportExport> get reportExports => List.unmodifiable(_reportExports);
+
+  // Settings
+  UserSettings? getUserSettings(String userId) => _userSettings[userId];
+  void updateUserSettings(UserSettings settings) {
+    _userSettings[settings.userId] = settings;
+  }
+
+  // Users
+  void updateUser(AppUser user) {
+    final index = _users.indexWhere((u) => u.id == user.id);
+    if (index != -1) {
+      _users[index] = user;
+    }
+  }
 
   /// Returns detection events for a specific station ID.
   List<DetectionEvent> getEventsForStation(String stationId) {
     return List.unmodifiable(
       _detectionEvents.where((e) => e.stationId == stationId).toList(),
     );
+  }
+
+  void addReportExport(ReportExport export) {
+    _reportExports.add(export);
   }
 
   // Authentication matching
