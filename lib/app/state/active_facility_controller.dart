@@ -51,4 +51,13 @@ class ActiveFacilityController extends ChangeNotifier {
     notifyListeners();
     return true;
   }
+
+  void resetToInitialFacility() {
+    final initialSiteId = _permittedSiteIds.isEmpty
+        ? null
+        : _permittedSiteIds.first;
+    if (_selectedSiteId == initialSiteId) return;
+    _selectedSiteId = initialSiteId;
+    notifyListeners();
+  }
 }

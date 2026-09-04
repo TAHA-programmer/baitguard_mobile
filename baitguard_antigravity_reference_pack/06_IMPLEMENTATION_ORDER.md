@@ -78,3 +78,13 @@ Only after the redesigned frontend is approved:
 - Cloud Functions/report generation
 - Offline cache
 - Real map/geolocation
+
+## Authentication backend batches
+
+- Authentication Batch 5: Pending Requests is implemented from
+  `24_pending_requests.png`, including active-admin Firestore reads and the
+  real Admin Dashboard pending count.
+- System Management remains deferred to a later batch; its visual reference is
+  retained as `25_system_management.png`.
+- Approve and Reject interaction flows remain deferred and will use the same
+  established admin theme.

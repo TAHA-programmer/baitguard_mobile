@@ -1,4 +1,16 @@
-enum AuthFailureType { invalidCredentials, accountInactive, unknown }
+enum AuthFailureType {
+  invalidCredentials,
+  invalidEmail,
+  accountDisabled,
+  network,
+  tooManyRequests,
+  operationNotAllowed,
+  weakPassword,
+  requiresRecentLogin,
+  noAuthenticatedUser,
+  emailAlreadyInUse,
+  unknown,
+}
 
 class AuthFailure implements Exception {
   final AuthFailureType type;

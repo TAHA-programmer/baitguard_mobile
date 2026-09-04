@@ -78,15 +78,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   String _getFacilityLabel() {
-    final user = context.read<EditProfileViewModel>().currentUser;
-    if (user == null || user.siteAccessIds.isEmpty) return 'None';
-    final id = user.siteAccessIds.first;
-    const names = {
-      'site_1': 'Main Warehouse',
-      'site_2': 'Downtown Branch',
-      'site_3': 'Uptown Office',
-    };
-    return names[id] ?? id;
+    return context.read<EditProfileViewModel>().assignedFacilityName;
   }
 
   @override
@@ -172,67 +164,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             const SizedBox(height: AppSpacing.xl),
 
                             // Avatar
-                            GestureDetector(
-                              onTap: () => AppTopToast.show(
-                                context,
-                                'Photo upload is not available yet.',
-                              ),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 44,
-                                    backgroundColor: AppColors.primaryBlue,
-                                    child: Text(
-                                      initials,
-                                      style: AppTypography.manropeBold.copyWith(
-                                        fontSize: 28,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 2,
-                                    right: 2,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primaryBlue,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.camera_alt,
-                                        size: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            GestureDetector(
-                              onTap: () => AppTopToast.show(
-                                context,
-                                'Photo upload is not available yet.',
-                              ),
+                            CircleAvatar(
+                              radius: 44,
+                              backgroundColor: AppColors.primaryBlue,
                               child: Text(
-                                'Change profile photo',
+                                initials,
                                 style: AppTypography.manropeBold.copyWith(
-                                  fontSize: 14,
-                                  color: AppColors.primaryBlue,
+                                  fontSize: 28,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
-                              'JPG, PNG up to 5 MB',
+                              'Profile initials are generated from your name.',
+                              textAlign: TextAlign.center,
                               style: AppTypography.manropeRegular.copyWith(
-                                fontSize: 12,
+                                fontSize: 13,
                                 color: AppColors.textSecondary,
                               ),
                             ),

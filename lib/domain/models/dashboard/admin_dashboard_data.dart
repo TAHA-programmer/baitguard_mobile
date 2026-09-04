@@ -71,4 +71,33 @@ class AdminDashboardData {
        facilityZones = List.unmodifiable(facilityZones);
 
   int get facilityCount => availableSites.length;
+
+  AdminDashboardData withPendingRequests({
+    required int pendingRequestCount,
+    required int newPendingRequestCountToday,
+  }) {
+    return AdminDashboardData(
+      selectedSite: selectedSite,
+      availableSites: availableSites,
+      lastUpdatedAt: lastUpdatedAt,
+      userCount: userCount,
+      pendingRequestCount: pendingRequestCount,
+      newPendingRequestCountToday: newPendingRequestCountToday,
+      systemStatus: systemStatus,
+      systemHealthScore: systemHealthScore,
+      healthScoreChange: healthScoreChange,
+      healthStatusMessage: healthStatusMessage,
+      stationMetrics: stationMetrics,
+      detectionsToday: detectionsToday,
+      detectionsChangePercentage: detectionsChangePercentage,
+      criticalAlertCount: criticalAlertCount,
+      unreadAlertCount: unreadAlertCount,
+      totalAlertCount: totalAlertCount,
+      recentAlerts: recentAlerts,
+      activitySeries: activitySeries,
+      speciesBreakdown: speciesBreakdown,
+      mapMarkers: mapMarkers,
+      facilityZones: facilityZones,
+    );
+  }
 }

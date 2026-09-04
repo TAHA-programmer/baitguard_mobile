@@ -62,9 +62,7 @@ class SettingsProfileCard extends StatelessWidget {
                                 alpha: 0.1,
                               ),
                               child: Text(
-                                user.name.isNotEmpty
-                                    ? user.name.substring(0, 1).toUpperCase()
-                                    : '?',
+                                _initials(user.name),
                                 style: AppTypography.manropeBold.copyWith(
                                   fontSize: 24,
                                   color: AppColors.primaryBlue,
@@ -221,5 +219,18 @@ class SettingsProfileCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _initials(String name) {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+    return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
   }
 }

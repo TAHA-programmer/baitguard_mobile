@@ -10,6 +10,8 @@ import '../widgets/baitguard_logo_mark.dart';
 import '../widgets/splash_background.dart';
 import '../widgets/decorative_circles.dart';
 import '../../onboarding/views/welcome_screen.dart';
+import '../../../app/state/app_session_controller.dart';
+import '../../../app/navigation/authenticated_destination_resolver.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,12 +21,15 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  SplashViewModel? _viewModel;
+
   @override
   void initState() {
     super.initState();
     // Initialize timing logic in ViewModel post-frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<SplashViewModel>();
+      _viewModel = viewModel;
       viewModel.initialize(const Duration(milliseconds: 2200));
       viewModel.addListener(_onSplashComplete);
     });
@@ -36,18 +41,28 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (viewModel.isCompleted) {
       viewModel.removeListener(_onSplashComplete);
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          settings: const RouteSettings(name: RouteNames.welcome),
-          builder: (_) => const WelcomeScreen(),
-        ),
+      final currentUser = context.read<AppSessionController>().currentUser;
+      if (currentUser == null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(
+            settings: const RouteSettings(name: RouteNames.welcome),
+            builder: (_) => const WelcomeScreen(),
+          ),
+        );
+        return;
+      }
+      final destination = AuthenticatedDestinationResolver.resolve(
+        currentUser.role,
       );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(destination, (route) => false);
     }
   }
 
   @override
   void dispose() {
-    // The listener is removed in _onSplashComplete, but it's safe to ensure cleanup.
+    _viewModel?.removeListener(_onSplashComplete);
     super.dispose();
   }
 

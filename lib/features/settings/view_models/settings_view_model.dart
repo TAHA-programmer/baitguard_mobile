@@ -15,6 +15,7 @@ class SettingsViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? _successMessage;
   UserSettings? _settings;
+  String? _activeFacilityName;
 
   int _actionSuccessEventId = 0;
   int _actionErrorEventId = 0;
@@ -32,6 +33,7 @@ class SettingsViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   UserSettings? get settings => _settings;
+  String? get activeFacilityName => _activeFacilityName;
   AppUser? get currentUser => _sessionController.currentUser;
   ActiveFacilityController get facilityController => _activeFacilityController;
 
@@ -49,6 +51,12 @@ class SettingsViewModel extends ChangeNotifier {
 
     try {
       _settings = await _settingsRepository.getSettings(user.id);
+      final siteId =
+          _settings!.defaultFacilityId ??
+          _activeFacilityController.selectedSiteId;
+      _activeFacilityName = siteId == null
+          ? null
+          : await _settingsRepository.getFacilityDisplayName(siteId);
       _errorMessage = null;
     } catch (e) {
       _errorMessage = 'Failed to load settings';
@@ -56,6 +64,16 @@ class SettingsViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> applySavedSettings(UserSettings settings) async {
+    _settings = settings;
+    final facilityId =
+        settings.defaultFacilityId ?? _activeFacilityController.selectedSiteId;
+    _activeFacilityName = facilityId == null
+        ? null
+        : await _settingsRepository.getFacilityDisplayName(facilityId);
+    notifyListeners();
   }
 
   Future<void> updateNotifications(
@@ -83,7 +101,4 @@ class SettingsViewModel extends ChangeNotifier {
     }
   }
 
-  void logout() {
-    _sessionController.clearSession();
-  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:baitguard/app/app.dart';
 import 'package:baitguard/features/authentication/views/login_screen.dart';
+import 'package:baitguard/features/authentication/views/forgot_password_screen.dart';
 import 'package:baitguard/features/splash/widgets/baitguard_logo_mark.dart';
 import 'package:baitguard/features/navigation/views/admin_app_shell.dart';
 
@@ -61,14 +62,14 @@ void main() {
     await tester.pump();
     expect(find.byIcon(Icons.check), findsOneWidget);
 
-    // 13. Forgot Password does not navigate automatically
+    // 13. Forgot Password opens its standalone route and returns safely.
     await tester.ensureVisible(find.text('Forgot Password?'));
     await tester.tap(find.text('Forgot Password?'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.byType(ForgotPasswordScreen), findsOneWidget);
+    await tester.tap(find.text('Back to Login'));
+    await tester.pumpAndSettle();
     expect(find.byType(LoginScreen), findsOneWidget);
-
-    // Advance time to clear toasts
-    await tester.pump(const Duration(seconds: 4));
 
     // 8. Valid credentials call the mock repository
     await tester.enterText(

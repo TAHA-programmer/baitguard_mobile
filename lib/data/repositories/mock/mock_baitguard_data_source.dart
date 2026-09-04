@@ -87,6 +87,7 @@ class MockBaitGuardDataSource {
           role: UserRole.admin,
           isActive: true,
           siteAccessIds: ['site_1', 'site_2', 'site_3', 'site_4', 'site_5'],
+          phoneNumber: '+1 555 987 6543',
         ),
         AppUser(
           id: 'viewer_1',
@@ -573,9 +574,13 @@ class MockBaitGuardDataSource {
     final record = AccessRequestRecord(
       id: 'req_$formattedNumber',
       request: request,
-      status: AccessRequestStatus.pending,
+      status: request.status,
     );
     _accessRequests.add(record);
+  }
+
+  void removeAccessRequest(String requestId) {
+    _accessRequests.removeWhere((request) => request.id == requestId);
   }
 
   /// Mutates the shared station store to record a bait refill.

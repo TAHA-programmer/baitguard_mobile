@@ -3,6 +3,7 @@ import 'package:baitguard/features/dashboard/view_models/user_dashboard_view_mod
 import 'package:baitguard/data/repositories/mock/mock_dashboard_repository.dart';
 import 'package:baitguard/data/repositories/mock/mock_baitguard_data_source.dart';
 import 'package:baitguard/app/state/app_session_controller.dart';
+import 'package:baitguard/domain/models/app_user.dart';
 import 'package:baitguard/domain/models/user_role.dart';
 import 'package:baitguard/domain/models/dashboard/user_dashboard_data.dart';
 
@@ -14,14 +15,14 @@ class SpyDashboardRepository extends MockDashboardRepository {
 
   @override
   Future<UserDashboardData> getUserDashboard({
-    required String userId,
+    required AppUser user,
     String? siteId,
   }) async {
     getUserDashboardCallCount++;
     if (shouldThrowError) {
       throw Exception('Network error');
     }
-    return super.getUserDashboard(userId: userId, siteId: siteId);
+    return super.getUserDashboard(user: user, siteId: siteId);
   }
 }
 

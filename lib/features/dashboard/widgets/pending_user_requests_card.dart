@@ -18,10 +18,6 @@ class PendingUserRequestsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (pendingCount <= 0) {
-      return const SizedBox.shrink();
-    }
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -67,7 +63,9 @@ class PendingUserRequestsCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$newTodayCount new today',
+                        pendingCount == 0
+                            ? 'No pending requests'
+                            : '$newTodayCount new today',
                         style: AppTypography.manropeRegular.copyWith(
                           fontSize: 12,
                           color: AppColors.textSecondary,

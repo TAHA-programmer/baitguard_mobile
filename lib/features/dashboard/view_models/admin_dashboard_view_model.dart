@@ -3,6 +3,8 @@ import '../../../app/state/active_facility_controller.dart';
 import '../../../domain/models/app_user.dart';
 import '../../../domain/models/dashboard/admin_dashboard_data.dart';
 import '../../../domain/repositories/dashboard_repository.dart';
+import '../../../domain/repositories/access_request_repository.dart';
+import '../../../domain/models/access_request_failure.dart';
 import '../../../app/state/app_session_controller.dart';
 import '../../../domain/models/user_role.dart';
 import 'user_dashboard_view_model.dart'; // To reuse DashboardLoadStatus
@@ -11,6 +13,7 @@ class AdminDashboardViewModel extends ChangeNotifier {
   final DashboardRepository dashboardRepository;
   final AppSessionController sessionController;
   final ActiveFacilityController activeFacilityController;
+  final AccessRequestRepository? accessRequestRepository;
 
   DashboardLoadStatus _status = DashboardLoadStatus.initial;
   DashboardLoadStatus get status => _status;
@@ -40,6 +43,7 @@ class AdminDashboardViewModel extends ChangeNotifier {
     required this.dashboardRepository,
     required this.sessionController,
     required this.activeFacilityController,
+    this.accessRequestRepository,
   });
 
   Future<void> load() async {
@@ -61,6 +65,40 @@ class AdminDashboardViewModel extends ChangeNotifier {
     notifyListeners();
 
     await _fetchData(isRefresh: true);
+  }
+
+  Future<void> refreshPendingCounts() async {
+    if (_isLoading || _data == null || accessRequestRepository == null) return;
+    _isLoading = true;
+    try {
+      _data = await _withRealPendingCounts(_data!);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> pendingRequestReviewed(DateTime? submittedAt) async {
+    final current = _data;
+    if (current == null) return;
+    final localSubmittedAt = submittedAt?.toLocal();
+    final now = DateTime.now();
+    final reviewedToday =
+        localSubmittedAt != null &&
+        localSubmittedAt.year == now.year &&
+        localSubmittedAt.month == now.month &&
+        localSubmittedAt.day == now.day;
+    _data = current.withPendingRequests(
+      pendingRequestCount: current.pendingRequestCount > 0
+          ? current.pendingRequestCount - 1
+          : 0,
+      newPendingRequestCountToday:
+          reviewedToday && current.newPendingRequestCountToday > 0
+          ? current.newPendingRequestCountToday - 1
+          : current.newPendingRequestCountToday,
+    );
+    notifyListeners();
+    await refreshPendingCounts();
   }
 
   /// Selects a new facility and reloads dashboard data.
@@ -95,10 +133,11 @@ class AdminDashboardViewModel extends ChangeNotifier {
         throw Exception('Invalid session or role');
       }
 
-      final result = await dashboardRepository.getAdminDashboard(
-        adminId: user.id,
+      var result = await dashboardRepository.getAdminDashboard(
+        admin: user,
         siteId: siteId,
       );
+      result = _preservePendingCounts(result);
 
       // Only commit after success
       _data = result;
@@ -109,6 +148,9 @@ class AdminDashboardViewModel extends ChangeNotifier {
       // This notifies StationsViewModel (and future Alerts/Reports) to reload.
       activeFacilityController.selectSite(siteId);
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Admin dashboard facility change failed: $e');
+      }
       // Preserve previous dashboard data and selected site
       _facilityErrorMessage = 'Failed to load facility. Please try again.';
       _facilityErrorEventId++;
@@ -124,14 +166,20 @@ class AdminDashboardViewModel extends ChangeNotifier {
       if (user == null || user.role != UserRole.admin) {
         throw Exception('Invalid session or role');
       }
+      if (user.siteAccessIds.isEmpty) {
+        _status = DashboardLoadStatus.failure;
+        _errorMessage = 'No facilities are assigned to your account.';
+        return;
+      }
 
       // Use the shared controller's current selected site.
       final siteId = activeFacilityController.selectedSiteId;
 
-      final result = await dashboardRepository.getAdminDashboard(
-        adminId: user.id,
+      var result = await dashboardRepository.getAdminDashboard(
+        admin: user,
         siteId: siteId,
       );
+      result = await _withRealPendingCounts(result);
 
       _data = result;
       _status = DashboardLoadStatus.success;
@@ -142,6 +190,9 @@ class AdminDashboardViewModel extends ChangeNotifier {
         activeFacilityController.selectSite(result.selectedSite.id);
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Admin dashboard load failed: $e');
+      }
       if (isRefresh && _data != null) {
         _refreshErrorMessage = 'Failed to refresh dashboard. Please try again.';
         _refreshErrorEventId++;
@@ -153,5 +204,84 @@ class AdminDashboardViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  AdminDashboardData _preservePendingCounts(AdminDashboardData result) {
+    final current = _data;
+    if (accessRequestRepository == null || current == null) return result;
+    return result.withPendingRequests(
+      pendingRequestCount: current.pendingRequestCount,
+      newPendingRequestCountToday: current.newPendingRequestCountToday,
+    );
+  }
+
+  Future<AdminDashboardData> _withRealPendingCounts(
+    AdminDashboardData result,
+  ) async {
+    final repository = accessRequestRepository;
+    if (repository == null) return result;
+    try {
+      final pending = await repository.getPendingRequests();
+      final now = DateTime.now();
+      final newToday = pending.where((record) {
+        final submittedAt = record.submittedAt?.toLocal();
+        return submittedAt != null &&
+            submittedAt.year == now.year &&
+            submittedAt.month == now.month &&
+            submittedAt.day == now.day;
+      }).length;
+      return result.withPendingRequests(
+        pendingRequestCount: pending.length,
+        newPendingRequestCountToday: newToday,
+      );
+    } on AccessRequestFailure catch (failure) {
+      if (kDebugMode) {
+        debugPrint(
+          'Admin pending-request count load failed: ${failure.type.name}',
+        );
+      }
+      _refreshErrorMessage = _pendingFailureMessage(failure.type);
+      _refreshErrorEventId++;
+      final current = _data;
+      return result.withPendingRequests(
+        pendingRequestCount: current?.pendingRequestCount ?? 0,
+        newPendingRequestCountToday: current?.newPendingRequestCountToday ?? 0,
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('Admin pending-request count load failed: $error');
+      }
+      _refreshErrorMessage = 'Unable to load pending requests right now.';
+      _refreshErrorEventId++;
+      final current = _data;
+      return result.withPendingRequests(
+        pendingRequestCount: current?.pendingRequestCount ?? 0,
+        newPendingRequestCountToday: current?.newPendingRequestCountToday ?? 0,
+      );
+    }
+  }
+
+  static String _pendingFailureMessage(AccessRequestFailureType type) {
+    return switch (type) {
+      AccessRequestFailureType.permissionDenied =>
+        'You do not have permission to review access requests.',
+      AccessRequestFailureType.unauthenticated =>
+        'Your session has expired. Please sign in again.',
+      AccessRequestFailureType.unavailable ||
+      AccessRequestFailureType.timeout =>
+        'Unable to load pending requests. Check your connection and try again.',
+      AccessRequestFailureType.missingIndex =>
+        'Pending requests are temporarily unavailable while database setup is completed.',
+      AccessRequestFailureType.invalidData =>
+        'One or more access requests could not be loaded.',
+      AccessRequestFailureType.notFound ||
+      AccessRequestFailureType.alreadyReviewed ||
+      AccessRequestFailureType.invalidRole ||
+      AccessRequestFailureType.noFacilitySelected ||
+      AccessRequestFailureType.duplicateApprovedInvitation =>
+        'Unable to load pending requests right now.',
+      AccessRequestFailureType.unknown =>
+        'Unable to load pending requests right now.',
+    };
   }
 }

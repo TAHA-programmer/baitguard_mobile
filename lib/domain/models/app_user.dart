@@ -15,6 +15,9 @@ class AppUser {
   final String? department;
   final String? phoneNumber;
   final String? shortBio;
+  final String? company;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   AppUser({
     required this.id,
@@ -29,30 +32,42 @@ class AppUser {
     this.department,
     this.phoneNumber,
     this.shortBio,
+    this.company,
+    this.createdAt,
+    this.updatedAt,
   }) : siteAccessIds = List.unmodifiable(siteAccessIds);
 
   AppUser copyWith({
     String? name,
+    UserRole? role,
+    bool? isActive,
+    List<String>? siteAccessIds,
     String? firstName,
     String? lastName,
     String? jobTitle,
     String? department,
     String? phoneNumber,
     String? shortBio,
+    String? company,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return AppUser(
       id: id,
       name: name ?? this.name,
       email: email,
-      role: role,
-      isActive: isActive,
-      siteAccessIds: siteAccessIds,
+      role: role ?? this.role,
+      isActive: isActive ?? this.isActive,
+      siteAccessIds: siteAccessIds ?? this.siteAccessIds,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       jobTitle: jobTitle ?? this.jobTitle,
       department: department ?? this.department,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       shortBio: shortBio ?? this.shortBio,
+      company: company ?? this.company,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

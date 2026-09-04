@@ -6,10 +6,14 @@ import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/app_radii.dart';
 import '../../../app/navigation/route_names.dart';
+import '../../../app/state/app_session_controller.dart';
+import '../../../app/state/active_facility_controller.dart';
+import '../../../app/state/auth_session_coordinator.dart';
 import '../../../core/widgets/app_loading_state.dart';
 import '../../../core/widgets/app_top_toast.dart';
 import '../../../domain/models/user_settings.dart';
 import '../view_models/settings_view_model.dart';
+import '../view_models/settings_preferences_view_model.dart';
 import 'widgets/settings_action_tile.dart';
 import 'widgets/settings_toggle_tile.dart';
 import 'widgets/settings_profile_card.dart';
@@ -24,19 +28,20 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   int _lastErrorId = 0;
   int _lastSuccessId = 0;
+  late final SettingsViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    final vm = context.read<SettingsViewModel>();
-    _lastErrorId = vm.actionErrorEventId;
-    _lastSuccessId = vm.actionSuccessEventId;
-    vm.addListener(_onViewModelChanged);
+    _viewModel = context.read<SettingsViewModel>();
+    _lastErrorId = _viewModel.actionErrorEventId;
+    _lastSuccessId = _viewModel.actionSuccessEventId;
+    _viewModel.addListener(_onViewModelChanged);
   }
 
   @override
   void dispose() {
-    context.read<SettingsViewModel>().removeListener(_onViewModelChanged);
+    _viewModel.removeListener(_onViewModelChanged);
     super.dispose();
   }
 
@@ -57,12 +62,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _handleLogout(BuildContext context, SettingsViewModel vm) {
-    vm.logout();
+  Future<void> _handleLogout(BuildContext context) async {
+    final coordinator = context.read<AuthSessionCoordinator>();
+    if (coordinator.isLoggingOut) return;
+    final activeFacilityController = context.read<ActiveFacilityController>();
+    final success = await coordinator.logout();
+    if (!context.mounted) return;
+    if (!success) {
+      AppTopToast.show(
+        context,
+        coordinator.logoutErrorMessage ??
+            'Unable to log out right now. Please try again.',
+      );
+      return;
+    }
+    activeFacilityController.resetToInitialFacility();
     Navigator.of(
       context,
       rootNavigator: true,
     ).pushNamedAndRemoveUntil(RouteNames.welcome, (route) => false);
+  }
+
+  Future<void> _openPreference(
+    BuildContext context,
+    SettingsViewModel viewModel,
+    String routeName,
+  ) async {
+    final currentSettings = viewModel.settings;
+    final currentUser = context.read<AppSessionController>().currentUser;
+    if (currentSettings == null || currentUser == null) return;
+
+    final result = await Navigator.of(context, rootNavigator: true).pushNamed(
+      routeName,
+      arguments: SettingsPreferencesRouteArguments(
+        settings: currentSettings,
+        permittedFacilityIds: currentUser.siteAccessIds,
+      ),
+    );
+    if (!context.mounted || result is! UserSettings) return;
+
+    await viewModel.applySavedSettings(result);
+    if (!context.mounted) return;
+
+    final message = switch (routeName) {
+      RouteNames.defaultView =>
+        'Default view changed to ${_formatViewType(result.defaultView)}',
+      RouteNames.defaultFacility =>
+        'Default facility changed to ${viewModel.activeFacilityName ?? 'selected facility'}',
+      RouteNames.defaultAlertFilter =>
+        'Default alert filter changed to ${_formatFilterType(result.defaultAlertFilter)}',
+      _ => 'Preference updated',
+    };
+    AppTopToast.show(context, message);
+  }
+
+  Future<void> _openSettingsAction(
+    BuildContext context,
+    String routeName,
+    String userId,
+  ) async {
+    final result = await Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamed(routeName, arguments: userId);
+    if (!context.mounted || result is! String) return;
+    AppTopToast.show(context, result);
   }
 
   String _formatViewType(DefaultViewType type) {
@@ -91,20 +155,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  String _formatFacilityName(String? id) {
-    if (id == null) return 'None';
-    if (id == 'site_1') return 'Main Warehouse';
-    if (id == 'site_2') return 'Downtown Branch';
-    if (id == 'site_3') return 'Uptown Office';
-    final parts = id.split('_');
-    if (parts.length == 2) {
-      return '${parts[0][0].toUpperCase()}${parts[0].substring(1)} ${parts[1]}';
-    }
-    return id;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final sessionUser = context.watch<AppSessionController>().currentUser;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -116,18 +170,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: AppColors.background,
         body: Consumer<SettingsViewModel>(
           builder: (context, vm, _) {
-            if (vm.isLoading || vm.settings == null || vm.currentUser == null) {
+            if (vm.isLoading || vm.settings == null || sessionUser == null) {
               return const AppLoadingState(message: 'Loading settings...');
             }
 
-            final user = vm.currentUser!;
+            final user = sessionUser;
             final settings = vm.settings!;
             final prefs = settings.notifications;
 
             // Resolve actual facility name if available, fallback to None
-            final facilityName = _formatFacilityName(
-              vm.facilityController.selectedSiteId,
-            );
+            final facilityName = vm.activeFacilityName ?? 'None';
 
             return CustomScrollView(
               slivers: [
@@ -201,7 +253,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               Navigator.of(
                                 context,
                                 rootNavigator: true,
-                              ).pushNamed(RouteNames.editProfile);
+                              ).pushNamed(
+                                RouteNames.editProfile,
+                                arguments: facilityName,
+                              );
                             },
                           ),
                           const SizedBox(height: AppSpacing.xl),
@@ -310,7 +365,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               iconBackgroundColor: AppColors.blueTint,
                               valueText:
                                   facilityName, // Display actual name, not site_1
-                              onTap: () {},
+                              onTap: () => _openPreference(
+                                context,
+                                vm,
+                                RouteNames.defaultFacility,
+                              ),
                             ),
                             const Divider(height: 1, color: AppColors.divider),
                             SettingsActionTile(
@@ -320,7 +379,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               iconColor: AppColors.purple,
                               iconBackgroundColor: AppColors.purpleTint,
                               valueText: _formatViewType(settings.defaultView),
-                              onTap: () {},
+                              onTap: () => _openPreference(
+                                context,
+                                vm,
+                                RouteNames.defaultView,
+                              ),
                             ),
                             const Divider(height: 1, color: AppColors.divider),
                             SettingsActionTile(
@@ -333,7 +396,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               valueText: _formatFilterType(
                                 settings.defaultAlertFilter,
                               ),
-                              onTap: () {},
+                              onTap: () => _openPreference(
+                                context,
+                                vm,
+                                RouteNames.defaultAlertFilter,
+                              ),
                             ),
                           ]),
                           const SizedBox(height: AppSpacing.xl),
@@ -347,7 +414,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               iconColor: AppColors.textSecondary,
                               iconBackgroundColor: AppColors.borderSecondary
                                   .withValues(alpha: 0.2),
-                              onTap: () {},
+                              onTap: () => _openSettingsAction(
+                                context,
+                                RouteNames.changePassword,
+                                user.id,
+                              ),
                             ),
                             const Divider(height: 1, color: AppColors.divider),
                             SettingsActionTile(
@@ -357,7 +428,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               leadingIcon: Icons.support_agent,
                               iconColor: AppColors.primaryBlue,
                               iconBackgroundColor: AppColors.blueTint,
-                              onTap: () {},
+                              onTap: () => _openSettingsAction(
+                                context,
+                                RouteNames.contactAdministrator,
+                                user.id,
+                              ),
                             ),
                           ]),
                           const SizedBox(height: AppSpacing.xl),
@@ -400,7 +475,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               iconColor: AppColors.textSecondary,
                               iconBackgroundColor: AppColors.borderSecondary
                                   .withValues(alpha: 0.2),
-                              onTap: () {},
+                              onTap: () => Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              ).pushNamed(RouteNames.privacyPolicy),
                             ),
                             const Divider(height: 1, color: AppColors.divider),
                             SettingsActionTile(
@@ -409,7 +487,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               iconColor: AppColors.textSecondary,
                               iconBackgroundColor: AppColors.borderSecondary
                                   .withValues(alpha: 0.2),
-                              onTap: () {},
+                              onTap: () => Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              ).pushNamed(RouteNames.termsConditions),
                             ),
                           ]),
                           const SizedBox(height: AppSpacing.xl),
@@ -424,7 +505,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               isDestructive: true,
                               destructiveColor: AppColors.criticalRed,
                               showChevron: false,
-                              onTap: () => _handleLogout(context, vm),
+                              onTap: () => _handleLogout(context),
                             ),
                           ]),
                           const SizedBox(height: AppSpacing.xxl),

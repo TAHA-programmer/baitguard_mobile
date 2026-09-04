@@ -59,13 +59,18 @@ class UserDashboardViewModel extends ChangeNotifier {
           (user.role != UserRole.viewer && user.role != UserRole.technician)) {
         throw Exception('Invalid session or role');
       }
+      if (user.siteAccessIds.isEmpty) {
+        _status = DashboardLoadStatus.failure;
+        _errorMessage = 'No facilities are assigned to your account.';
+        return;
+      }
 
       final siteId = user.siteAccessIds.isNotEmpty
           ? user.siteAccessIds.first
           : null;
 
       final result = await dashboardRepository.getUserDashboard(
-        userId: user.id,
+        user: user,
         siteId: siteId,
       );
 
@@ -73,6 +78,9 @@ class UserDashboardViewModel extends ChangeNotifier {
       _status = DashboardLoadStatus.success;
       _errorMessage = null;
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('User dashboard load failed: $e');
+      }
       if (isRefresh && _data != null) {
         _refreshErrorMessage = 'Failed to refresh dashboard. Please try again.';
         _refreshErrorEventId++;

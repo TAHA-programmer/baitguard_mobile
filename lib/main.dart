@@ -7,16 +7,9 @@ import 'app/app.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    // Attempt Firebase initialization, but don't block the mock frontend if it fails
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (e) {
-    debugPrint(
-      'Firebase init bypassed or failed (expected in mock frontend phase): \$e',
-    );
-  }
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const BaitGuardApp());
 }

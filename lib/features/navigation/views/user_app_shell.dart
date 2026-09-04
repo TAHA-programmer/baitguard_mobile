@@ -66,6 +66,16 @@ class _UserAppShellState extends State<UserAppShell> {
             UserDashboardScreen(
               onSelectTab: _onTabTapped,
               onAlertTap: openAlertDetail,
+              onStationTap: (stationId) {
+                setState(() {
+                  _currentIndex = 1;
+                });
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _stationsNavigatorKey.currentState?.openStationDetail(
+                    stationId,
+                  );
+                });
+              },
             ),
             // Screen 08 — Stations nested flow
             StationsFlowNavigator(key: _stationsNavigatorKey),

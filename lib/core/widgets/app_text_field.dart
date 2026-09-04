@@ -49,7 +49,9 @@ class AppTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.xs,
           children: [
             Text(
               label,
@@ -59,7 +61,6 @@ class AppTextField extends StatelessWidget {
               ),
             ),
             if (isOptional) ...[
-              const SizedBox(width: AppSpacing.xs),
               Text(
                 '(Optional)',
                 style: AppTypography.manropeSemiBold.copyWith(

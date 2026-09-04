@@ -5,6 +5,7 @@ import 'theme/app_theme.dart';
 import 'navigation/app_router.dart';
 import '../features/splash/views/splash_screen.dart';
 import '../features/splash/view_models/splash_view_model.dart';
+import 'state/auth_session_coordinator.dart';
 
 class BaitGuardApp extends StatelessWidget {
   const BaitGuardApp({super.key});
@@ -18,7 +19,8 @@ class BaitGuardApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: ChangeNotifierProvider(
-          create: (_) => SplashViewModel(),
+          create: (context) =>
+              SplashViewModel(context.read<AuthSessionCoordinator>()),
           child: const SplashScreen(),
         ),
         onGenerateRoute: AppRouter.onGenerateRoute,

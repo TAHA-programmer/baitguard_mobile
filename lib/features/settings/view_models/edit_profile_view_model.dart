@@ -2,12 +2,14 @@ import 'package:flutter/foundation.dart';
 import '../../../domain/models/app_user.dart';
 import '../../../domain/repositories/user_repository.dart';
 import '../../../app/state/app_session_controller.dart';
+import '../../../domain/models/user_profile_failure.dart';
 
 enum EditProfileSaveStatus { idle, saving, success, failure }
 
 class EditProfileViewModel extends ChangeNotifier {
   final UserRepository _userRepository;
   final AppSessionController _sessionController;
+  final String assignedFacilityName;
 
   // Mutable form state
   String firstName;
@@ -25,6 +27,7 @@ class EditProfileViewModel extends ChangeNotifier {
   EditProfileViewModel({
     required UserRepository userRepository,
     required AppSessionController sessionController,
+    this.assignedFacilityName = 'None',
   }) : _userRepository = userRepository,
        _sessionController = sessionController,
        firstName =
@@ -46,20 +49,37 @@ class EditProfileViewModel extends ChangeNotifier {
 
   // Splits "John Anderson" → "John"
   static String _splitFirstName(String fullName) {
-    final parts = fullName.trim().split(' ');
-    return parts.isNotEmpty ? parts.first : '';
+    final normalized = fullName.trim();
+    if (normalized.isEmpty) return '';
+    return normalized.split(RegExp(r'\s+')).first;
   }
 
   // Splits "John Anderson" → "Anderson"
   static String _splitLastName(String fullName) {
-    final parts = fullName.trim().split(' ');
+    final normalized = fullName.trim();
+    if (normalized.isEmpty) return '';
+    final parts = normalized.split(RegExp(r'\s+'));
     return parts.length > 1 ? parts.sublist(1).join(' ') : '';
   }
 
   /// Returns null if valid, or a human-readable error string.
   String? validate() {
     if (firstName.trim().isEmpty) return 'First name is required.';
-    if (lastName.trim().isEmpty) return 'Last name is required.';
+    if (firstName.trim().length > 50) {
+      return 'First name must be 50 characters or fewer.';
+    }
+    if (lastName.trim().length > 50) {
+      return 'Last name must be 50 characters or fewer.';
+    }
+    if (jobTitle.trim().length > 80) {
+      return 'Job title must be 80 characters or fewer.';
+    }
+    if (department.trim().length > 80) {
+      return 'Department must be 80 characters or fewer.';
+    }
+    if (phoneNumber.trim().length > 30) {
+      return 'Phone number must be 30 characters or fewer.';
+    }
     if (phoneNumber.trim().isNotEmpty &&
         !_isReasonablePhone(phoneNumber.trim())) {
       return 'Enter a valid phone number.';
@@ -78,6 +98,7 @@ class EditProfileViewModel extends ChangeNotifier {
   }
 
   Future<bool> save() async {
+    if (isSaving) return false;
     final validationError = validate();
     if (validationError != null) {
       _errorMessage = validationError;
@@ -93,27 +114,38 @@ class EditProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final fullName = '${firstName.trim()} ${lastName.trim()}'.trim();
-      final updatedUser = user.copyWith(
-        name: fullName,
+      final savedUser = await _userRepository.updateOwnProfile(
+        uid: user.id,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         jobTitle: jobTitle.trim(),
         department: department.trim(),
-        phoneNumber: phoneNumber.trim(),
-        shortBio: shortBio.trim(),
+        phone: phoneNumber.trim(),
+        bio: shortBio.trim(),
       );
 
-      await _userRepository.updateUser(updatedUser);
-
       // Synchronise the session so dashboard names and Settings header update.
-      _sessionController.establishSession(updatedUser);
+      _sessionController.establishSession(savedUser);
 
       _saveStatus = EditProfileSaveStatus.success;
       notifyListeners();
       return true;
-    } catch (e) {
-      _errorMessage = 'Failed to save profile. Please try again.';
+    } on UserProfileFailure catch (failure) {
+      _errorMessage = switch (failure.type) {
+        UserProfileFailureType.unauthenticated =>
+          'Your session has expired. Please sign in again.',
+        UserProfileFailureType.permissionDenied =>
+          'Your profile changes could not be authorized. Please sign in again or contact your administrator.',
+        UserProfileFailureType.unavailable =>
+          'Unable to connect. Check your internet connection and try again.',
+        _ => 'Unable to save your profile right now. Please try again.',
+      };
+      _saveStatus = EditProfileSaveStatus.failure;
+      notifyListeners();
+      return false;
+    } catch (_) {
+      _errorMessage =
+          'Unable to save your profile right now. Please try again.';
       _saveStatus = EditProfileSaveStatus.failure;
       notifyListeners();
       return false;

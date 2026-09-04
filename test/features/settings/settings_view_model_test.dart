@@ -8,7 +8,11 @@ import 'package:baitguard/features/settings/view_models/edit_profile_view_model.
 // ── In-memory stub implementing the real UserRepository interface ─────────
 
 class _StubUserRepository implements UserRepository {
+  @override
+  Future<AppUser> updateManagedUserAccess(dynamic request) =>
+      throw UnimplementedError();
   AppUser? lastUpdated;
+  AppUser? existingUser;
   bool shouldThrow = false;
 
   @override
@@ -18,9 +22,42 @@ class _StubUserRepository implements UserRepository {
   Future<AppUser?> getUserById(String id) async => null;
 
   @override
-  Future<void> updateUser(AppUser user) async {
+  Future<AppUser> updateUser(AppUser user) async {
     if (shouldThrow) throw Exception('network error');
     lastUpdated = user;
+    return user;
+  }
+
+  @override
+  Future<AppUser> updateOwnProfile({
+    required String uid,
+    required String firstName,
+    required String lastName,
+    required String jobTitle,
+    required String department,
+    required String phone,
+    required String bio,
+  }) async {
+    if (shouldThrow) throw Exception('network error');
+    final current = existingUser!;
+    lastUpdated = AppUser(
+      id: current.id,
+      name: '$firstName $lastName'.trim(),
+      email: current.email,
+      role: current.role,
+      isActive: current.isActive,
+      siteAccessIds: current.siteAccessIds,
+      firstName: firstName,
+      lastName: lastName,
+      jobTitle: jobTitle,
+      department: department,
+      phoneNumber: phone,
+      shortBio: bio,
+      company: current.company,
+      createdAt: current.createdAt,
+      updatedAt: DateTime.now(),
+    );
+    return lastUpdated!;
   }
 }
 
@@ -33,29 +70,29 @@ AppUser _makeUser({
   String? department,
   String? phoneNumber,
   String? shortBio,
-}) =>
-    AppUser(
-      id: 'user_1',
-      name: '$firstName $lastName',
-      email: 'jane.doe@company.com',
-      role: UserRole.viewer,
-      siteAccessIds: const ['site_1'],
-      firstName: firstName,
-      lastName: lastName,
-      jobTitle: jobTitle,
-      department: department,
-      phoneNumber: phoneNumber,
-      shortBio: shortBio,
-    );
+}) => AppUser(
+  id: 'user_1',
+  name: '$firstName $lastName',
+  email: 'jane.doe@company.com',
+  role: UserRole.viewer,
+  siteAccessIds: const ['site_1'],
+  firstName: firstName,
+  lastName: lastName,
+  jobTitle: jobTitle,
+  department: department,
+  phoneNumber: phoneNumber,
+  shortBio: shortBio,
+);
 
 EditProfileViewModel _makeVm(
   AppSessionController session,
   UserRepository repo,
-) =>
-    EditProfileViewModel(
-      userRepository: repo,
-      sessionController: session,
-    );
+) {
+  if (repo is _StubUserRepository) {
+    repo.existingUser = session.currentUser;
+  }
+  return EditProfileViewModel(userRepository: repo, sessionController: session);
+}
 
 // ── Tests ─────────────────────────────────────────────────────────────────
 
@@ -90,16 +127,19 @@ void main() {
       expect(vm.shortBio, 'Some bio.');
     });
 
-    test('email is read-only via currentUser; EditProfileViewModel has no email setter', () {
-      session.establishSession(_makeUser());
-      final vm = _makeVm(session, repo);
+    test(
+      'email is read-only via currentUser; EditProfileViewModel has no email setter',
+      () {
+        session.establishSession(_makeUser());
+        final vm = _makeVm(session, repo);
 
-      expect(vm.currentUser?.email, 'jane.doe@company.com');
-      // Verify there is no public `email` field on the vm itself.
-      // (Compile-time guarantee; this assertion confirms it stays read-only.)
-      final mirror = vm;
-      expect(mirror, isA<EditProfileViewModel>());
-    });
+        expect(vm.currentUser?.email, 'jane.doe@company.com');
+        // Verify there is no public `email` field on the vm itself.
+        // (Compile-time guarantee; this assertion confirms it stays read-only.)
+        final mirror = vm;
+        expect(mirror, isA<EditProfileViewModel>());
+      },
+    );
 
     test('bio cannot exceed 200 characters — validation rejects it', () {
       session.establishSession(_makeUser());
@@ -138,12 +178,12 @@ void main() {
       expect(vm.validate(), isNotNull);
     });
 
-    test('validation fails when last name is empty', () {
+    test('validation allows a one-part name', () {
       session.establishSession(_makeUser());
       final vm = _makeVm(session, repo);
       vm.lastName = '';
 
-      expect(vm.validate(), isNotNull);
+      expect(vm.validate(), isNull);
     });
 
     test('validation passes for a valid phone number', () {
@@ -205,32 +245,38 @@ void main() {
       expect(repo.lastUpdated!.jobTitle, 'Senior Inspector');
     });
 
-    test('successful save calls establishSession on AppSessionController', () async {
-      session.establishSession(_makeUser());
-      final vm = _makeVm(session, repo);
-      vm.firstName = 'NewFirst';
-      vm.lastName = 'NewLast';
+    test(
+      'successful save calls establishSession on AppSessionController',
+      () async {
+        session.establishSession(_makeUser());
+        final vm = _makeVm(session, repo);
+        vm.firstName = 'NewFirst';
+        vm.lastName = 'NewLast';
 
-      int notifyCount = 0;
-      session.addListener(() => notifyCount++);
+        int notifyCount = 0;
+        session.addListener(() => notifyCount++);
 
-      await vm.save();
+        await vm.save();
 
-      expect(notifyCount, greaterThan(0));
-      expect(session.currentUser?.firstName, 'NewFirst');
-    });
+        expect(notifyCount, greaterThan(0));
+        expect(session.currentUser?.firstName, 'NewFirst');
+      },
+    );
 
-    test('Main Settings reflects saved values via AppSessionController', () async {
-      session.establishSession(_makeUser(firstName: 'Old', lastName: 'Name'));
-      final vm = _makeVm(session, repo);
-      vm.firstName = 'New';
-      vm.lastName = 'Name';
+    test(
+      'Main Settings reflects saved values via AppSessionController',
+      () async {
+        session.establishSession(_makeUser(firstName: 'Old', lastName: 'Name'));
+        final vm = _makeVm(session, repo);
+        vm.firstName = 'New';
+        vm.lastName = 'Name';
 
-      await vm.save();
+        await vm.save();
 
-      expect(session.currentUser?.name, 'New Name');
-      expect(session.currentUser?.firstName, 'New');
-    });
+        expect(session.currentUser?.name, 'New Name');
+        expect(session.currentUser?.firstName, 'New');
+      },
+    );
 
     test('save failure sets error message and status to failure', () async {
       session.establishSession(_makeUser());

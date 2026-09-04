@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:baitguard/domain/models/access_request.dart';
 import 'package:baitguard/domain/models/access_request_record.dart';
+import 'package:baitguard/domain/models/user_role.dart';
 import 'package:baitguard/domain/repositories/access_request_repository.dart';
 import 'package:baitguard/domain/repositories/auth_repository.dart';
 import 'package:baitguard/features/authentication/views/login_screen.dart';
@@ -14,7 +15,11 @@ import 'package:baitguard/features/authentication/views/request_submitted_screen
 import 'package:baitguard/app/navigation/route_names.dart';
 import 'package:baitguard/core/widgets/primary_button.dart';
 import 'package:baitguard/app/state/app_session_controller.dart';
+import 'package:baitguard/domain/models/authenticated_identity.dart';
 import 'package:baitguard/domain/models/app_user.dart';
+import 'package:baitguard/domain/repositories/user_repository.dart';
+import 'package:baitguard/domain/repositories/login_preferences_repository.dart';
+import 'package:baitguard/data/repositories/mock/in_memory_login_preferences_repository.dart';
 
 class MockTestAccessRequestRepository implements AccessRequestRepository {
   bool requestAccessCalled = false;
@@ -28,19 +33,73 @@ class MockTestAccessRequestRepository implements AccessRequestRepository {
   }
 
   @override
+  Future<void> approveRequest({
+    required String requestId,
+    required String reviewerUid,
+    required UserRole assignedRole,
+    required List<String> assignedFacilityIds,
+  }) => throw UnsupportedError('Not used');
+
+  @override
+  Future<void> rejectRequest({
+    required String requestId,
+    required String reviewerUid,
+    required String rejectionReason,
+  }) => throw UnsupportedError('Not used');
+
+  @override
   Future<List<AccessRequestRecord>> getPendingRequests({
     String? siteId,
   }) async => [];
 }
 
-class DummyAuthRepository implements AuthRepository {
+class DummyAuthRepository extends AuthRepository {
   @override
-  Future<AppUser?> getCurrentUser() async => null;
+  Stream<AuthenticatedIdentity?> authStateChanges() => const Stream.empty();
+
   @override
-  Future<AppUser> login(String email, String password) async =>
+  Future<AuthenticatedIdentity?> getCurrentIdentity() async => null;
+
+  @override
+  Future<AuthenticatedIdentity> signIn(String email, String password) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {}
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
+
+  @override
+  Future<void> signOut() async {}
+}
+
+class DummyUserRepository implements UserRepository {
+  @override
+  Future<AppUser> updateManagedUserAccess(dynamic request) =>
       throw UnimplementedError();
   @override
-  Future<void> logout() async {}
+  Future<AppUser?> getUserById(String id) async => null;
+
+  @override
+  Future<List<AppUser>> getUsers() async => const [];
+
+  @override
+  Future<AppUser> updateUser(AppUser user) async => user;
+
+  @override
+  Future<AppUser> updateOwnProfile({
+    required String uid,
+    required String firstName,
+    required String lastName,
+    required String jobTitle,
+    required String department,
+    required String phone,
+    required String bio,
+  }) => throw UnimplementedError();
 }
 
 void main() {
@@ -49,6 +108,10 @@ void main() {
       providers: [
         Provider<AccessRequestRepository>.value(value: mockRepo),
         Provider<AuthRepository>.value(value: DummyAuthRepository()),
+        Provider<UserRepository>.value(value: DummyUserRepository()),
+        Provider<LoginPreferencesRepository>.value(
+          value: InMemoryLoginPreferencesRepository(),
+        ),
         ChangeNotifierProvider(create: (_) => AppSessionController()),
       ],
       child: MaterialApp(
@@ -58,7 +121,9 @@ void main() {
               builder: (context) => ChangeNotifierProvider(
                 create: (_) => LoginViewModel(
                   context.read<AuthRepository>(),
+                  context.read<UserRepository>(),
                   context.read<AppSessionController>(),
+                  context.read<LoginPreferencesRepository>(),
                 ),
                 child: const LoginScreen(),
               ),
@@ -82,6 +147,19 @@ void main() {
           return null;
         },
         initialRoute: RouteNames.login,
+      ),
+    );
+  }
+
+  Widget buildRequestOnly(MockTestAccessRequestRepository mockRepo) {
+    return Provider<AccessRequestRepository>.value(
+      value: mockRepo,
+      child: MaterialApp(
+        home: ChangeNotifierProvider(
+          create: (context) =>
+              RequestAccessViewModel(context.read<AccessRequestRepository>()),
+          child: const RequestAccessScreen(),
+        ),
       ),
     );
   }
@@ -151,8 +229,8 @@ void main() {
     expect(mockRepo.requestAccessCalled, isTrue);
     expect(mockRepo.lastRequest?.fullName, 'John Smith');
     expect(mockRepo.lastRequest?.email, 'john@company.com');
-    expect(mockRepo.lastRequest?.department, isNull);
-    expect(mockRepo.lastRequest?.message, isNull);
+    expect(mockRepo.lastRequest?.department, isEmpty);
+    expect(mockRepo.lastRequest?.message, isEmpty);
 
     // 6. Verify navigation occurred instead of toast
     expect(find.text('Request submitted successfully.'), findsNothing);
@@ -171,5 +249,48 @@ void main() {
 
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.byType(RequestSubmittedScreen), findsNothing);
+  });
+
+  testWidgets('Android Back and repeated open-close are lifecycle safe', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildTestApp(MockTestAccessRequestRepository()));
+    await tester.pumpAndSettle();
+
+    for (var index = 0; index < 2; index++) {
+      await tester.ensureVisible(find.text('Contact Administrator'));
+      await tester.tap(find.text('Contact Administrator'));
+      await tester.pumpAndSettle();
+      expect(find.byType(RequestAccessScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('small keyboard viewport remains scrollable without overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      buildRequestOnly(MockTestAccessRequestRepository()),
+    );
+    await tester.pumpAndSettle();
+
+    final emailField = find.byType(TextFormField).at(1);
+    await tester.ensureVisible(emailField);
+    await tester.tap(emailField);
+    await tester.showKeyboard(emailField);
+    await tester.pump();
+
+    expect(find.byType(SingleChildScrollView), findsWidgets);
+    expect(tester.takeException(), isNull);
   });
 }

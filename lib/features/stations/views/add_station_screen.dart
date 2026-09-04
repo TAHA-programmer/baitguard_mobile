@@ -294,37 +294,44 @@ class _AddStationScreenState extends State<AddStationScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          _buildRadioOption(
-            label: 'Wi-Fi (Recommended)',
-            value: StationConnectivityType.wifi,
+          RadioGroup<StationConnectivityType>(
             groupValue: vm.connectivityType,
-            onChanged: (val) => vm.setConnectivityType(val!),
-          ),
-          if (vm.connectivityType == StationConnectivityType.wifi)
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 32.0,
-                bottom: AppSpacing.sm,
-                top: 4,
-              ),
-              child: _buildTextField(
-                label: 'Network Name',
-                hint: 'Enter Wi-Fi network name',
-                errorText: vm.wifiNetworkNameError,
-                onChanged: vm.setWifiNetworkName,
-              ),
+            onChanged: (val) {
+              if (val != null) {
+                vm.setConnectivityType(val);
+              }
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildRadioOption(
+                  label: 'Wi-Fi (Recommended)',
+                  value: StationConnectivityType.wifi,
+                ),
+                if (vm.connectivityType == StationConnectivityType.wifi)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 32.0,
+                      bottom: AppSpacing.sm,
+                      top: 4,
+                    ),
+                    child: _buildTextField(
+                      label: 'Network Name',
+                      hint: 'Enter Wi-Fi network name',
+                      errorText: vm.wifiNetworkNameError,
+                      onChanged: vm.setWifiNetworkName,
+                    ),
+                  ),
+                _buildRadioOption(
+                  label: '4G / LTE',
+                  value: StationConnectivityType.cellular,
+                ),
+                _buildRadioOption(
+                  label: 'LoRaWAN',
+                  value: StationConnectivityType.lorawan,
+                ),
+              ],
             ),
-          _buildRadioOption(
-            label: '4G / LTE',
-            value: StationConnectivityType.cellular,
-            groupValue: vm.connectivityType,
-            onChanged: (val) => vm.setConnectivityType(val!),
-          ),
-          _buildRadioOption(
-            label: 'LoRaWAN',
-            value: StationConnectivityType.lorawan,
-            groupValue: vm.connectivityType,
-            onChanged: (val) => vm.setConnectivityType(val!),
           ),
         ],
       ),
@@ -334,8 +341,6 @@ class _AddStationScreenState extends State<AddStationScreen> {
   Widget _buildRadioOption({
     required String label,
     required StationConnectivityType value,
-    required StationConnectivityType groupValue,
-    required ValueChanged<StationConnectivityType?> onChanged,
   }) {
     return RadioListTile<StationConnectivityType>(
       title: Text(
@@ -346,8 +351,6 @@ class _AddStationScreenState extends State<AddStationScreen> {
         ),
       ),
       value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
       contentPadding: EdgeInsets.zero,
       activeColor: AppColors.primaryBlue,
       dense: true,
@@ -447,7 +450,7 @@ class _AddStationScreenState extends State<AddStationScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
             activeTrackColor: AppColors.primaryBlue,
             inactiveTrackColor: AppColors.borderSecondary,
           ),

@@ -10,6 +10,7 @@ import '../../../core/widgets/app_loading_state.dart';
 import '../../../core/widgets/app_top_toast.dart';
 import '../../../app/navigation/route_names.dart';
 import '../../../app/state/active_facility_controller.dart';
+import '../../../app/state/app_session_controller.dart';
 import '../../../domain/models/site.dart';
 import '../../navigation/models/admin_alert_list_preset.dart';
 import '../view_models/admin_dashboard_view_model.dart';
@@ -32,11 +33,17 @@ import '../widgets/pending_user_requests_card.dart';
 class AdminDashboardScreen extends StatefulWidget {
   final void Function(int tabIndex, {AdminAlertListPreset preset}) onSelectTab;
   final ValueChanged<String>? onAlertTap;
+  final VoidCallback? onReviewRequests;
+  final VoidCallback? onManageSystem;
+  final VoidCallback? onUsers;
 
   const AdminDashboardScreen({
     super.key,
     required this.onSelectTab,
     this.onAlertTap,
+    this.onReviewRequests,
+    this.onManageSystem,
+    this.onUsers,
   });
 
   @override
@@ -88,6 +95,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<AdminDashboardViewModel>();
+    final sessionUser = context.watch<AppSessionController>().currentUser;
 
     if (viewModel.status == DashboardLoadStatus.initial ||
         viewModel.status == DashboardLoadStatus.loading &&
@@ -114,10 +122,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
 
     final data = viewModel.data!;
-    final adminUser = viewModel.adminUser;
+    final adminUser = sessionUser ?? viewModel.adminUser;
 
     // Avatar initials
-    final nameParts = adminUser.name.split(' ');
+    final nameParts = adminUser.name.trim().split(RegExp(r'\s+'));
     final initials = nameParts.length > 1
         ? '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase()
         : (nameParts.isNotEmpty && nameParts[0].isNotEmpty
@@ -159,6 +167,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                             Text(
                               adminUser.name,
+                              maxLines: 1,
                               style: AppTypography.manropeExtraBold.copyWith(
                                 fontSize: 30,
                                 color: AppColors.textPrimary,
@@ -190,6 +199,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ],
                         ),
                       ),
+                      const SizedBox(width: AppSpacing.sm),
                       Row(
                         children: [
                           GestureDetector(
@@ -324,12 +334,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     userCount: data.userCount,
                     pendingRequestCount: data.pendingRequestCount,
                     systemStatus: data.systemStatus,
-                    onManageSystem: () {
-                      AppTopToast.show(
-                        context,
-                        'System management will be available shortly.',
-                      );
-                    },
+                    onManageSystem:
+                        widget.onManageSystem ??
+                        () => AppTopToast.show(
+                          context,
+                          'System management will be available shortly.',
+                        ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
 
@@ -368,12 +378,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     onRefresh: viewModel.refresh,
                     onMap: _scrollToMap,
                     onReports: () => widget.onSelectTab(3),
-                    onUsers: () {
-                      AppTopToast.show(
-                        context,
-                        'User management will be available shortly.',
-                      );
-                    },
+                    onUsers:
+                        widget.onUsers ??
+                        () => AppTopToast.show(
+                          context,
+                          'User management is unavailable.',
+                        ),
                     onSettings: () {
                       Navigator.of(context, rootNavigator: true).pushNamed(
                         RouteNames.settings,
@@ -418,20 +428,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     activityChangePercentage: data.detectionsChangePercentage,
                   ),
 
-                  // 11. Pending User Requests (conditionally shown)
-                  if (data.pendingRequestCount > 0) ...[
-                    const SizedBox(height: AppSpacing.xxl),
-                    PendingUserRequestsCard(
-                      pendingCount: data.pendingRequestCount,
-                      newTodayCount: data.newPendingRequestCountToday,
-                      onReviewRequests: () {
-                        AppTopToast.show(
+                  // 11. Pending User Requests
+                  const SizedBox(height: AppSpacing.xxl),
+                  PendingUserRequestsCard(
+                    pendingCount: data.pendingRequestCount,
+                    newTodayCount: data.newPendingRequestCountToday,
+                    onReviewRequests:
+                        widget.onReviewRequests ??
+                        () => Navigator.of(
                           context,
-                          'Access-request review will be available shortly.',
-                        );
-                      },
-                    ),
-                  ],
+                          rootNavigator: true,
+                        ).pushNamed(RouteNames.pendingRequests),
+                  ),
                   const SizedBox(height: AppSpacing.xxl),
 
                   // 12. Species Breakdown

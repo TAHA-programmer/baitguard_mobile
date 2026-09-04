@@ -24,6 +24,8 @@ import 'package:baitguard/features/dashboard/widgets/pending_user_requests_card.
 import 'package:baitguard/features/dashboard/widgets/species_breakdown_card.dart';
 import 'package:baitguard/features/dashboard/widgets/dashboard_alert_card.dart';
 import 'package:baitguard/features/navigation/models/admin_alert_list_preset.dart';
+import 'package:baitguard/app/state/app_session_controller.dart';
+import 'package:baitguard/app/state/active_facility_controller.dart';
 
 class MockAdminDashboardViewModel extends ChangeNotifier
     implements AdminDashboardViewModel {
@@ -57,6 +59,9 @@ class MockAdminDashboardViewModel extends ChangeNotifier
   get activeFacilityController => throw UnimplementedError();
 
   @override
+  get accessRequestRepository => null;
+
+  @override
   int facilityErrorEventId = 0;
 
   @override
@@ -79,16 +84,40 @@ class MockAdminDashboardViewModel extends ChangeNotifier
   Future<void> refresh() async {}
 
   @override
+  Future<void> refreshPendingCounts() async {}
+
+  @override
+  Future<void> pendingRequestReviewed(DateTime? submittedAt) async {}
+
+  @override
   Future<void> selectFacility(String siteId) async {}
 }
 
 void main() {
-  Widget buildTestableWidget(AdminDashboardViewModel viewModel) {
+  Widget buildTestableWidget(
+    AdminDashboardViewModel viewModel, {
+    AppSessionController? sessionController,
+    VoidCallback? onReviewRequests,
+  }) {
+    final session = sessionController ?? AppSessionController();
+    if (!session.isAuthenticated) {
+      session.establishSession(viewModel.adminUser);
+    }
     return MaterialApp(
-      home: ChangeNotifierProvider<AdminDashboardViewModel>.value(
-        value: viewModel,
+      home: MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AppSessionController>.value(value: session),
+          ChangeNotifierProvider<ActiveFacilityController>(
+            create: (_) =>
+                ActiveFacilityController(permittedSiteIds: const ['site1']),
+          ),
+          ChangeNotifierProvider<AdminDashboardViewModel>.value(
+            value: viewModel,
+          ),
+        ],
         child: AdminDashboardScreen(
           onSelectTab: (index, {AdminAlertListPreset? preset}) {},
+          onReviewRequests: onReviewRequests,
         ),
       ),
     );
@@ -149,6 +178,29 @@ void main() {
       expect(find.text('Alex Rivera'), findsOneWidget);
       expect(find.text('Administrator'), findsOneWidget);
       expect(find.text('Warehouse A'), findsOneWidget);
+    });
+
+    testWidgets('header reacts to session identity and handles long names', (
+      WidgetTester tester,
+    ) async {
+      final session = AppSessionController()
+        ..establishSession(viewModel.adminUser);
+      await tester.pumpWidget(
+        buildTestableWidget(viewModel, sessionController: session),
+      );
+
+      session.establishSession(
+        viewModel.adminUser.copyWith(
+          name: 'Muhammad Abdul Rehman Khan',
+          firstName: 'Muhammad',
+          lastName: 'Abdul Rehman Khan',
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Muhammad Abdul Rehman Khan'), findsOneWidget);
+      expect(find.text('MA'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets(
@@ -334,10 +386,9 @@ void main() {
       expect(find.byType(ActivityChartCard), findsOneWidget);
     });
 
-    testWidgets('Pending User Requests conditional rendering', (
+    testWidgets('Pending User Requests remains visible at zero', (
       WidgetTester tester,
     ) async {
-      // Test when count > 0
       await tester.pumpWidget(buildTestableWidget(viewModel));
       await tester.drag(
         find.byType(SingleChildScrollView),
@@ -355,7 +406,6 @@ void main() {
         findsOneWidget,
       );
 
-      // Test when count == 0
       viewModel.setData(createMockData(pendingRequestCount: 0));
       await tester.pumpWidget(buildTestableWidget(viewModel));
       await tester.drag(
@@ -364,15 +414,42 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // It is a SizedBox.shrink() inside the component, but we'll find no Review Requests text
       expect(
         find.descendant(
           of: find.byType(PendingUserRequestsCard),
           matching: find.text('Review Requests'),
         ),
-        findsNothing,
+        findsOneWidget,
+      );
+      expect(find.text('No pending requests'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(PendingUserRequestsCard),
+          matching: find.text('0'),
+        ),
+        findsOneWidget,
       );
     });
+
+    testWidgets(
+      'Review Requests invokes Pending Requests navigation contract',
+      (WidgetTester tester) async {
+        var opened = false;
+        await tester.pumpWidget(
+          buildTestableWidget(viewModel, onReviewRequests: () => opened = true),
+        );
+        await tester.drag(
+          find.byType(SingleChildScrollView),
+          const Offset(0, -2200),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Review Requests'));
+
+        expect(opened, isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('Species Breakdown appears', (WidgetTester tester) async {
       await tester.pumpWidget(buildTestableWidget(viewModel));

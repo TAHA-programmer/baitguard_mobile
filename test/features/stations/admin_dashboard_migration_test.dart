@@ -7,13 +7,14 @@ import 'package:baitguard/domain/models/user_role.dart';
 import 'package:baitguard/features/dashboard/view_models/admin_dashboard_view_model.dart';
 import 'package:baitguard/features/dashboard/view_models/user_dashboard_view_model.dart';
 import 'package:baitguard/domain/models/dashboard/admin_dashboard_data.dart';
+import 'package:baitguard/domain/models/app_user.dart';
 
 class _FailingDashboardRepository extends MockDashboardRepository {
   _FailingDashboardRepository(super.dataSource);
 
   @override
   Future<AdminDashboardData> getAdminDashboard({
-    required String adminId,
+    required AppUser admin,
     String? siteId,
   }) async {
     throw Exception('Network error');

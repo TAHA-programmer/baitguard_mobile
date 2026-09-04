@@ -23,12 +23,22 @@ refresh feedback. They are legacy references.
 14. Reports screen
 15. Settings/Profile screen
 16. Edit Profile screen
+17. Default View
+18. Default Facility
+19. Default Alert Filter
+20. Change Password
+21. Contact Administrator
+22. Privacy Policy
+23. Terms & Conditions
+24. Pending Requests — implemented in Authentication Batch 5
+25. System Management — reference retained; implementation deferred
 
 ## Screens that exist in code but do not yet have a direct target screenshot
 
 - Station Detail
 - Alert Detail, if still required as a separate route
-- Admin user-management screens
+- Admin approval/rejection interaction screens, to be derived later from the
+  Pending Requests and System Management theme
 - Admin role-management screens
 - Add/edit user forms
 - Any dialogs, sheets, empty states, validation states, loading states, and polished success states

@@ -9,6 +9,7 @@ import '../../../core/widgets/app_loading_state.dart';
 import '../../../core/widgets/app_top_toast.dart';
 import '../../../app/navigation/route_names.dart';
 import '../../../app/state/active_facility_controller.dart';
+import '../../../app/state/app_session_controller.dart';
 import '../view_models/user_dashboard_view_model.dart';
 import '../widgets/activity_chart_card.dart';
 import '../widgets/facility_map_card.dart';
@@ -22,11 +23,13 @@ import '../widgets/species_breakdown_card.dart';
 class UserDashboardScreen extends StatefulWidget {
   final ValueChanged<int> onSelectTab;
   final ValueChanged<String>? onAlertTap;
+  final ValueChanged<String>? onStationTap;
 
   const UserDashboardScreen({
     super.key,
     required this.onSelectTab,
     this.onAlertTap,
+    this.onStationTap,
   });
 
   @override
@@ -67,6 +70,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<UserDashboardViewModel>();
+    final sessionUser = context.watch<AppSessionController>().currentUser;
 
     if (viewModel.status == DashboardLoadStatus.initial ||
         viewModel.status == DashboardLoadStatus.loading &&
@@ -91,9 +95,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     }
 
     final data = viewModel.data!;
+    final user = sessionUser ?? data.user;
 
     // Determine user name initials for avatar
-    final nameParts = data.user.name.split(' ');
+    final nameParts = user.name.trim().split(RegExp(r'\s+'));
     final initials = nameParts.length > 1
         ? '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase()
         : (nameParts.isNotEmpty && nameParts[0].isNotEmpty
@@ -121,26 +126,31 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Good morning,',
-                            style: AppTypography.manropeRegular.copyWith(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Good morning,',
+                              style: AppTypography.manropeRegular.copyWith(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                          ),
-                          Text(
-                            data.user.name,
-                            style: AppTypography.manropeExtraBold.copyWith(
-                              fontSize: 30,
-                              color: AppColors.textPrimary,
-                              height: 1.1,
+                            Text(
+                              user.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.manropeExtraBold.copyWith(
+                                fontSize: 30,
+                                color: AppColors.textPrimary,
+                                height: 1.1,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: AppSpacing.sm),
                       Row(
                         children: [
                           GestureDetector(
@@ -267,11 +277,14 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                     markers: data.mapMarkers,
                     zones: data.facilityZones,
                     onMarkerTap: (stationId) {
-                      AppTopToast.show(
-                        context,
-                        'Station Detail for $stationId will be available shortly.',
-                      );
-                      // TODO: Navigate to the new Station Detail route when implemented
+                      if (widget.onStationTap != null) {
+                        widget.onStationTap!(stationId);
+                      } else {
+                        AppTopToast.show(
+                          context,
+                          'Station Detail for $stationId will be available shortly.',
+                        );
+                      }
                     },
                   ),
                   const SizedBox(height: AppSpacing.xxl),

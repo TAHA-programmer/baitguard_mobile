@@ -1,11 +1,13 @@
 import '../../../domain/models/alert_severity.dart';
 import '../../../domain/models/alert_status.dart';
+import '../../../domain/models/app_user.dart';
 import '../../../domain/models/dashboard/admin_dashboard_data.dart';
 import '../../../domain/models/dashboard/dashboard_alert_item.dart';
 import '../../../domain/models/dashboard/dashboard_system_status.dart';
 import '../../../domain/models/dashboard/station_map_marker.dart';
 import '../../../domain/models/dashboard/user_dashboard_data.dart';
 import '../../../domain/models/site.dart';
+import '../../../domain/models/user_role.dart';
 import '../../../domain/repositories/dashboard_repository.dart';
 import 'mock_baitguard_data_source.dart';
 
@@ -16,18 +18,38 @@ class MockDashboardRepository implements DashboardRepository {
 
   @override
   Future<UserDashboardData> getUserDashboard({
-    required String userId,
+    required AppUser user,
     String? siteId,
   }) async {
     await Future.delayed(const Duration(milliseconds: 600));
 
+    if (user.role != UserRole.viewer && user.role != UserRole.technician) {
+      throw ArgumentError.value(user.role, 'user.role', 'Unsupported role');
+    }
+
+    final permittedSiteIds = _dataSource.sites
+        .where((site) => user.siteAccessIds.contains(site.id))
+        .map((site) => site.id)
+        .toSet();
+    if (permittedSiteIds.isEmpty) {
+      throw StateError('Authenticated user has no matching permitted facility');
+    }
+
+    final selectedSiteId = siteId != null && permittedSiteIds.contains(siteId)
+        ? siteId
+        : permittedSiteIds.first;
     final snapshot = _dataSource.deploymentSnapshot;
-    final user = _dataSource.users.firstWhere((u) => u.id == userId);
 
     // Map specific stable alerts for User Dashboard
     final userAlertIds = const {'alert_1', 'alert_2', 'alert_3', 'alert_4'};
     final recentAlerts = _dataSource.alerts
         .where((a) => userAlertIds.contains(a.id))
+        .where((alert) {
+          final station = _dataSource.stations.firstWhere(
+            (candidate) => candidate.id == alert.stationId,
+          );
+          return station.siteId == selectedSiteId;
+        })
         .map((a) {
           final station = _dataSource.stations.firstWhere(
             (s) => s.id == a.stationId,
@@ -48,7 +70,10 @@ class MockDashboardRepository implements DashboardRepository {
     final markerCoordinates = snapshot.markerCoordinates;
 
     final mapMarkers = _dataSource.stations
-        .where((s) => markerCoordinates.containsKey(s.id))
+        .where(
+          (s) =>
+              s.siteId == selectedSiteId && markerCoordinates.containsKey(s.id),
+        )
         .map((s) {
           final coords = markerCoordinates[s.id]!;
           return StationMapMarker(
@@ -81,18 +106,22 @@ class MockDashboardRepository implements DashboardRepository {
 
   @override
   Future<AdminDashboardData> getAdminDashboard({
-    required String adminId,
+    required AppUser admin,
     String? siteId,
   }) async {
     await Future.delayed(const Duration(milliseconds: 600));
 
+    if (admin.role != UserRole.admin) {
+      throw ArgumentError.value(admin.role, 'admin.role', 'Admin required');
+    }
+
     final snapshot = _dataSource.deploymentSnapshot;
-    final admin = _dataSource.users.firstWhere((u) => u.id == adminId);
 
     // Filter available sites based on admin access
     final availableSites = _dataSource.sites
         .where((s) => admin.siteAccessIds.contains(s.id))
         .toList();
+    final availableSiteIds = availableSites.map((site) => site.id).toSet();
 
     if (availableSites.isEmpty) {
       throw Exception('Admin has no site access');
@@ -101,10 +130,12 @@ class MockDashboardRepository implements DashboardRepository {
     // Determine selected site
     Site selectedSite = availableSites.first;
     if (siteId != null) {
-      try {
-        selectedSite = availableSites.firstWhere((s) => s.id == siteId);
-      } catch (_) {
-        throw Exception('Unauthorized or invalid site selection');
+      if (!admin.siteAccessIds.contains(siteId)) {
+        throw StateError('Unauthorized site selection');
+      }
+      final matchingSites = availableSites.where((s) => s.id == siteId);
+      if (matchingSites.isNotEmpty) {
+        selectedSite = matchingSites.first;
       }
     }
 
@@ -113,10 +144,12 @@ class MockDashboardRepository implements DashboardRepository {
     final today = DateTime(now.year, now.month, now.day);
     int newRequestsToday = 0;
     for (final req in _dataSource.accessRequests) {
+      final submittedAt = req.request.submittedAt;
+      if (submittedAt == null) continue;
       final submittedDate = DateTime(
-        req.request.submittedAt.year,
-        req.request.submittedAt.month,
-        req.request.submittedAt.day,
+        submittedAt.year,
+        submittedAt.month,
+        submittedAt.day,
       );
       if (submittedDate.isAtSameMomentAs(today)) {
         newRequestsToday++;
@@ -124,20 +157,28 @@ class MockDashboardRepository implements DashboardRepository {
     }
 
     // Map representative recent alerts (admin uses all 6 seeded)
-    final recentAlerts = _dataSource.alerts.map((a) {
-      final station = _dataSource.stations.firstWhere(
-        (s) => s.id == a.stationId,
-      );
-      return DashboardAlertItem(
-        id: a.id,
-        title: a.description,
-        location: station.locationDescription,
-        timestamp: a.timestamp,
-        severity: a.severity,
-        type: a.type,
-        status: a.status,
-      );
-    }).toList();
+    final recentAlerts = _dataSource.alerts
+        .where((alert) {
+          final station = _dataSource.stations.firstWhere(
+            (candidate) => candidate.id == alert.stationId,
+          );
+          return availableSiteIds.contains(station.siteId);
+        })
+        .map((a) {
+          final station = _dataSource.stations.firstWhere(
+            (s) => s.id == a.stationId,
+          );
+          return DashboardAlertItem(
+            id: a.id,
+            title: a.description,
+            location: station.locationDescription,
+            timestamp: a.timestamp,
+            severity: a.severity,
+            type: a.type,
+            status: a.status,
+          );
+        })
+        .toList();
 
     // Critical Unresolved Alert Count
     final criticalStationIds = <String>{};
@@ -152,7 +193,11 @@ class MockDashboardRepository implements DashboardRepository {
 
     final markerCoordinates = snapshot.markerCoordinates;
     final mapMarkers = _dataSource.stations
-        .where((s) => markerCoordinates.containsKey(s.id))
+        .where(
+          (s) =>
+              availableSiteIds.contains(s.siteId) &&
+              markerCoordinates.containsKey(s.id),
+        )
         .map((s) {
           final coords = markerCoordinates[s.id]!;
           return StationMapMarker(

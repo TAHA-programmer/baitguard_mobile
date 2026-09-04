@@ -36,17 +36,21 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
   final _messageFocus = FocusNode();
 
   bool _hasNavigated = false;
+  RequestAccessViewModel? _viewModel;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RequestAccessViewModel>().addListener(_onViewModelChange);
+      if (!mounted) return;
+      _viewModel = context.read<RequestAccessViewModel>()
+        ..addListener(_onViewModelChange);
     });
   }
 
   @override
   void dispose() {
+    _viewModel?.removeListener(_onViewModelChange);
     _fullNameController.dispose();
     _emailController.dispose();
     _companyController.dispose();
@@ -287,6 +291,7 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
                               focusNode: _departmentFocus,
                               textCapitalization: TextCapitalization.words,
                               textInputAction: TextInputAction.next,
+                              errorText: viewModel.departmentError,
                               onChanged: viewModel.setDepartment,
                               onFieldSubmitted: (_) =>
                                   _messageFocus.requestFocus(),
@@ -304,6 +309,7 @@ class _RequestAccessScreenState extends State<RequestAccessScreen> {
                               minLines: 3,
                               maxLines: 5,
                               maxLength: 500,
+                              errorText: viewModel.messageError,
                               onChanged: viewModel.setMessage,
                               onFieldSubmitted: (_) => _handleSubmit(),
                             ),

@@ -8,7 +8,6 @@ import '../../../app/theme/app_radii.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../core/widgets/app_text_field.dart';
-import '../../../core/widgets/app_top_toast.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../app/state/app_session_controller.dart';
 import '../../../app/navigation/authenticated_destination_resolver.dart';
@@ -36,6 +35,17 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final viewModel = context.read<LoginViewModel>();
+      await viewModel.initializeRememberedEmail();
+      if (!mounted) return;
+      _emailController.text = viewModel.email;
+    });
   }
 
   void _handleLogin() async {
@@ -103,162 +113,202 @@ class _LoginScreenState extends State<LoginScreen> {
                                   horizontal: AppSpacing.pageHorizontal,
                                   vertical: AppSpacing.xl,
                                 ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    if (viewModel.generalError != null) ...[
-                                      Container(
-                                        padding: const EdgeInsets.all(
-                                          AppSpacing.md,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.redTint,
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadii.md,
+                                child: AutofillGroup(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      if (viewModel.generalError != null) ...[
+                                        Container(
+                                          padding: const EdgeInsets.all(
+                                            AppSpacing.md,
                                           ),
-                                          border: Border.all(
-                                            color: AppColors.criticalRed
-                                                .withValues(alpha: 0.3),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.redTint,
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadii.md,
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.criticalRed
+                                                  .withValues(alpha: 0.3),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.error_outline,
+                                                color: AppColors.criticalRed,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(
+                                                width: AppSpacing.sm,
+                                              ),
+                                              Expanded(
+                                                child: Text(
+                                                  viewModel.generalError!,
+                                                  style: AppTypography
+                                                      .manropeMedium
+                                                      .copyWith(
+                                                        color: AppColors
+                                                            .criticalRed,
+                                                        fontSize: 13,
+                                                      ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        child: Row(
+                                        const SizedBox(height: AppSpacing.lg),
+                                      ],
+
+                                      AppTextField(
+                                        label: 'Email Address',
+                                        hintText: 'you@company.com',
+                                        controller: _emailController,
+                                        focusNode: _emailFocusNode,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        textInputAction: TextInputAction.next,
+                                        autofillHints: const [
+                                          AutofillHints.username,
+                                          AutofillHints.email,
+                                        ],
+                                        errorText: viewModel.emailError,
+                                        onChanged: viewModel.setEmail,
+                                        onFieldSubmitted: (_) =>
+                                            _passwordFocusNode.requestFocus(),
+                                      ),
+                                      const SizedBox(height: AppSpacing.lg),
+
+                                      AppTextField(
+                                        label: 'Password',
+                                        hintText: '••••••••',
+                                        controller: _passwordController,
+                                        focusNode: _passwordFocusNode,
+                                        obscureText:
+                                            !viewModel.isPasswordVisible,
+                                        textInputAction: TextInputAction.done,
+                                        autofillHints: const [
+                                          AutofillHints.password,
+                                        ],
+                                        errorText: viewModel.passwordError,
+                                        onChanged: viewModel.setPassword,
+                                        onFieldSubmitted: (_) => _handleLogin(),
+                                        suffixIcon: IconButton(
+                                          icon: Icon(
+                                            viewModel.isPasswordVisible
+                                                ? Icons.visibility_off
+                                                : Icons.visibility,
+                                            color: AppColors.textTertiary,
+                                          ),
+                                          onPressed: viewModel
+                                              .togglePasswordVisibility,
+                                          splashRadius: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.lg),
+
+                                      RememberMeRow(
+                                        value: viewModel.rememberMe,
+                                        onChanged: viewModel.toggleRememberMe,
+                                        onForgotPasswordPressed: () {
+                                          Navigator.of(context).pushNamed(
+                                            RouteNames.forgotPassword,
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: AppSpacing.xxl),
+
+                                      PrimaryButton(
+                                        text: 'Log In',
+                                        isLoading: viewModel.isLoading,
+                                        onPressed: _handleLogin,
+                                      ),
+                                      const SizedBox(height: AppSpacing.xxl),
+
+                                      const Divider(
+                                        color: AppColors.divider,
+                                        height: 1,
+                                        thickness: 1,
+                                      ),
+                                      const SizedBox(height: AppSpacing.xl),
+
+                                      // Contact Administrator Row
+                                      Center(
+                                        child: Wrap(
+                                          alignment: WrapAlignment.center,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
                                           children: [
-                                            const Icon(
-                                              Icons.error_outline,
-                                              color: AppColors.criticalRed,
-                                              size: 20,
+                                            Text(
+                                              'Need access to the system? ',
+                                              style: AppTypography
+                                                  .manropeRegular
+                                                  .copyWith(
+                                                    fontSize: 13,
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                  ),
                                             ),
-                                            const SizedBox(
-                                              width: AppSpacing.sm,
-                                            ),
-                                            Expanded(
+                                            GestureDetector(
+                                              onTap: () {
+                                                Navigator.of(context).pushNamed(
+                                                  RouteNames.requestAccess,
+                                                );
+                                              },
                                               child: Text(
-                                                viewModel.generalError!,
+                                                'Contact Administrator',
                                                 style: AppTypography
-                                                    .manropeMedium
+                                                    .manropeSemiBold
                                                     .copyWith(
-                                                      color:
-                                                          AppColors.criticalRed,
                                                       fontSize: 13,
+                                                      color:
+                                                          AppColors.primaryBlue,
                                                     ),
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(height: AppSpacing.lg),
-                                    ],
 
-                                    AppTextField(
-                                      label: 'Email Address',
-                                      hintText: 'you@company.com',
-                                      controller: _emailController,
-                                      focusNode: _emailFocusNode,
-                                      keyboardType: TextInputType.emailAddress,
-                                      textInputAction: TextInputAction.next,
-                                      autofillHints: const [
-                                        AutofillHints.email,
-                                      ],
-                                      errorText: viewModel.emailError,
-                                      onChanged: viewModel.setEmail,
-                                      onFieldSubmitted: (_) =>
-                                          _passwordFocusNode.requestFocus(),
-                                    ),
-                                    const SizedBox(height: AppSpacing.lg),
-
-                                    AppTextField(
-                                      label: 'Password',
-                                      hintText: '••••••••',
-                                      controller: _passwordController,
-                                      focusNode: _passwordFocusNode,
-                                      obscureText: !viewModel.isPasswordVisible,
-                                      textInputAction: TextInputAction.done,
-                                      autofillHints: const [
-                                        AutofillHints.password,
-                                      ],
-                                      errorText: viewModel.passwordError,
-                                      onChanged: viewModel.setPassword,
-                                      onFieldSubmitted: (_) => _handleLogin(),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          viewModel.isPasswordVisible
-                                              ? Icons.visibility_off
-                                              : Icons.visibility,
-                                          color: AppColors.textTertiary,
-                                        ),
-                                        onPressed:
-                                            viewModel.togglePasswordVisibility,
-                                        splashRadius: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.lg),
-
-                                    RememberMeRow(
-                                      value: viewModel.rememberMe,
-                                      onChanged: viewModel.toggleRememberMe,
-                                      onForgotPasswordPressed: () {
-                                        AppTopToast.show(
-                                          context,
-                                          'Password recovery will be available when authentication is connected.',
-                                        );
-                                      },
-                                    ),
-                                    const SizedBox(height: AppSpacing.xxl),
-
-                                    PrimaryButton(
-                                      text: 'Log In',
-                                      isLoading: viewModel.isLoading,
-                                      onPressed: _handleLogin,
-                                    ),
-                                    const SizedBox(height: AppSpacing.xxl),
-
-                                    const Divider(
-                                      color: AppColors.divider,
-                                      height: 1,
-                                      thickness: 1,
-                                    ),
-                                    const SizedBox(height: AppSpacing.xl),
-
-                                    // Contact Administrator Row
-                                    Center(
-                                      child: Wrap(
-                                        alignment: WrapAlignment.center,
-                                        crossAxisAlignment:
-                                            WrapCrossAlignment.center,
-                                        children: [
-                                          Text(
-                                            'Need access to the system? ',
-                                            style: AppTypography.manropeRegular
-                                                .copyWith(
-                                                  fontSize: 13,
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                ),
-                                          ),
-                                          GestureDetector(
-                                            onTap: () {
-                                              Navigator.of(context).pushNamed(
-                                                RouteNames.requestAccess,
-                                              );
-                                            },
-                                            child: Text(
-                                              'Contact Administrator',
+                                      const SizedBox(height: AppSpacing.md),
+                                      Center(
+                                        child: Wrap(
+                                          alignment: WrapAlignment.center,
+                                          children: [
+                                            Text(
+                                              'Already approved? ',
                                               style: AppTypography
-                                                  .manropeSemiBold
+                                                  .manropeRegular
                                                   .copyWith(
                                                     fontSize: 13,
                                                     color:
-                                                        AppColors.primaryBlue,
+                                                        AppColors.textSecondary,
                                                   ),
                                             ),
-                                          ),
-                                        ],
+                                            GestureDetector(
+                                              onTap: () => Navigator.of(context)
+                                                  .pushNamed(
+                                                    RouteNames.activateAccount,
+                                                  ),
+                                              child: Text(
+                                                'Activate your account',
+                                                style: AppTypography
+                                                    .manropeSemiBold
+                                                    .copyWith(
+                                                      fontSize: 13,
+                                                      color:
+                                                          AppColors.primaryBlue,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
 
-                                    const SizedBox(height: AppSpacing.xl),
-                                  ],
+                                      const SizedBox(height: AppSpacing.xl),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),

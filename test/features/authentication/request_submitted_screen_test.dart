@@ -9,18 +9,61 @@ import 'package:baitguard/features/authentication/views/request_submitted_screen
 import 'package:baitguard/features/authentication/widgets/request_next_steps_card.dart';
 import 'package:baitguard/features/authentication/widgets/request_success_icon.dart';
 import 'package:baitguard/app/navigation/route_names.dart';
+import 'package:baitguard/domain/models/authenticated_identity.dart';
 import 'package:baitguard/domain/models/app_user.dart';
+import 'package:baitguard/domain/repositories/user_repository.dart';
+import 'package:baitguard/domain/repositories/login_preferences_repository.dart';
+import 'package:baitguard/data/repositories/mock/in_memory_login_preferences_repository.dart';
 import 'package:baitguard/core/widgets/primary_button.dart';
 import 'package:baitguard/app/state/app_session_controller.dart';
 
-class _DummyAuthRepository implements AuthRepository {
+class _DummyAuthRepository extends AuthRepository {
   @override
-  Future<AppUser?> getCurrentUser() async => null;
+  Stream<AuthenticatedIdentity?> authStateChanges() => const Stream.empty();
+
   @override
-  Future<AppUser> login(String email, String password) async =>
+  Future<AuthenticatedIdentity?> getCurrentIdentity() async => null;
+
+  @override
+  Future<AuthenticatedIdentity> signIn(String email, String password) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {}
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
+
+  @override
+  Future<void> signOut() async {}
+}
+
+class _DummyUserRepository implements UserRepository {
+  @override
+  Future<AppUser> updateManagedUserAccess(dynamic request) =>
       throw UnimplementedError();
   @override
-  Future<void> logout() async {}
+  Future<AppUser?> getUserById(String id) async => null;
+
+  @override
+  Future<List<AppUser>> getUsers() async => const [];
+
+  @override
+  Future<AppUser> updateUser(AppUser user) async => user;
+
+  @override
+  Future<AppUser> updateOwnProfile({
+    required String uid,
+    required String firstName,
+    required String lastName,
+    required String jobTitle,
+    required String department,
+    required String phone,
+    required String bio,
+  }) => throw UnimplementedError();
 }
 
 void main() {
@@ -28,6 +71,10 @@ void main() {
     return MultiProvider(
       providers: [
         Provider<AuthRepository>.value(value: _DummyAuthRepository()),
+        Provider<UserRepository>.value(value: _DummyUserRepository()),
+        Provider<LoginPreferencesRepository>.value(
+          value: InMemoryLoginPreferencesRepository(),
+        ),
         ChangeNotifierProvider(create: (_) => AppSessionController()),
       ],
       child: MaterialApp(
@@ -37,7 +84,9 @@ void main() {
               builder: (context) => ChangeNotifierProvider(
                 create: (_) => LoginViewModel(
                   context.read<AuthRepository>(),
+                  context.read<UserRepository>(),
                   context.read<AppSessionController>(),
+                  context.read<LoginPreferencesRepository>(),
                 ),
                 child: const LoginScreen(),
               ),

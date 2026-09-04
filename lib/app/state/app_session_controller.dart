@@ -10,11 +10,13 @@ class AppSessionController extends ChangeNotifier {
   UserRole? get role => _currentUser?.role;
 
   void establishSession(AppUser user) {
+    if (identical(_currentUser, user)) return;
     _currentUser = user;
     notifyListeners();
   }
 
   void clearSession() {
+    if (_currentUser == null) return;
     _currentUser = null;
     notifyListeners();
   }
