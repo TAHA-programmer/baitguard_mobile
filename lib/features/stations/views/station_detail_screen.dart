@@ -238,14 +238,16 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                     Container(
                       width: 6,
                       height: 6,
-                      decoration: const BoxDecoration(
-                        color: AppColors.criticalRed,
+                      decoration: BoxDecoration(
+                        color: station.isOnline
+                            ? AppColors.warningAmber
+                            : AppColors.textTertiary,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'LIVE',
+                      station.isOnline ? 'CAMERA (PREVIEW)' : 'CAMERA OFFLINE',
                       style: AppTypography.manropeBold.copyWith(
                         fontSize: 10,
                         color: Colors.white,
@@ -269,7 +271,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                 borderRadius: BorderRadius.circular(AppRadii.sm),
               ),
               child: Text(
-                'Night Vision Auto',
+                'Static Preview Only',
                 style: AppTypography.manropeMedium.copyWith(
                   fontSize: 10,
                   color: Colors.white,

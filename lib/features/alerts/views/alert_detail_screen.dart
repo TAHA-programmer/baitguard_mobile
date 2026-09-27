@@ -600,7 +600,9 @@ class _AlertDetailScreenState extends State<AlertDetailScreen> {
                 ),
               ),
               Text(
-                '${(event.confidenceScore * 100).round()}%',
+                event.confidenceScore != null
+                    ? '${(event.confidenceScore! * 100).round()}%'
+                    : '—',
                 style: AppTypography.manropeMedium.copyWith(
                   fontSize: 14,
                   color: AppColors.textPrimary,

@@ -43,42 +43,49 @@ class ActivityChartCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Activity today',
-                      style: AppTypography.manropeBold.copyWith(
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          activityChangePercentage > 0
-                              ? Icons.arrow_outward
-                              : Icons.arrow_downward,
-                          size: 14,
-                          color: activityChangePercentage > 0
-                              ? AppColors.successGreen
-                              : AppColors.criticalRed,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Activity today',
+                        style: AppTypography.manropeBold.copyWith(
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$sign${activityChangePercentage.toInt()}% vs yesterday',
-                          style: AppTypography.manropeRegular.copyWith(
-                            fontSize: 11,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            activityChangePercentage > 0
+                                ? Icons.arrow_outward
+                                : Icons.arrow_downward,
+                            size: 14,
                             color: activityChangePercentage > 0
                                 ? AppColors.successGreen
                                 : AppColors.criticalRed,
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              '$sign${activityChangePercentage.toInt()}% vs yesterday',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.manropeRegular.copyWith(
+                                fontSize: 11,
+                                color: activityChangePercentage > 0
+                                    ? AppColors.successGreen
+                                    : AppColors.criticalRed,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: AppSpacing.sm),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [

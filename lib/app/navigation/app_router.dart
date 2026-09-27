@@ -139,11 +139,17 @@ class AppRouter {
                   permittedSiteIds: List<String>.unmodifiable(permittedSiteIds),
                 ),
               ),
-              ChangeNotifierProvider<UserDashboardViewModel>(
-                create: (_) => UserDashboardViewModel(
+              ChangeNotifierProxyProvider<
+                ActiveFacilityController,
+                UserDashboardViewModel
+              >(
+                create: (ctx) => UserDashboardViewModel(
                   dashboardRepository: context.read<DashboardRepository>(),
                   sessionController: session,
+                  activeFacilityController: ctx
+                      .read<ActiveFacilityController>(),
                 )..load(),
+                update: (context, controller, previous) => previous!,
               ),
               ChangeNotifierProxyProvider<
                 ActiveFacilityController,

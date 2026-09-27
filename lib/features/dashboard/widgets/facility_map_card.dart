@@ -94,8 +94,10 @@ class FacilityMapCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
 
             // Legend
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            Wrap(
+              alignment: WrapAlignment.spaceAround,
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 _LegendItem(color: AppColors.successGreen, label: 'Active'),
                 _LegendItem(color: AppColors.criticalRed, label: 'Alert'),

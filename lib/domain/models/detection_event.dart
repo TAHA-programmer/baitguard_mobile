@@ -7,7 +7,7 @@ class DetectionEvent {
   final String stationId;
   final DateTime timestamp;
   final DetectedSpecies species;
-  final double confidenceScore;
+  final double? confidenceScore;
   final String? evidenceImageUrl;
   final DetectionEventStatus status;
   final String? alertId;
@@ -17,7 +17,7 @@ class DetectionEvent {
     required this.stationId,
     required this.timestamp,
     required this.species,
-    required this.confidenceScore,
+    this.confidenceScore,
     this.evidenceImageUrl,
     this.status = DetectionEventStatus.open,
     this.alertId,

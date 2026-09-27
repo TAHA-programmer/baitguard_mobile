@@ -337,7 +337,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 Expanded(
                                   child: KpiCard(
                                     label: 'Bait refills',
-                                    value: data.summary.baitRefills.toString(),
+                                    value: data.summary.baitRefills != null
+                                        ? data.summary.baitRefills.toString()
+                                        : '—',
                                     changePercent:
                                         data.summary.baitRefillsChangePercent,
                                     positiveIsGood: true,
@@ -353,8 +355,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 Expanded(
                                   child: KpiCard(
                                     label: 'System uptime',
-                                    value:
-                                        '${data.summary.systemUptimePercent.toStringAsFixed(1)}%',
+                                    value: data.summary.systemUptimePercent != null
+                                        ? '${data.summary.systemUptimePercent!.toStringAsFixed(1)}%'
+                                        : '—',
                                     changePercent:
                                         data.summary.uptimeChangePercent,
                                     positiveIsGood: true,
@@ -365,8 +368,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 Expanded(
                                   child: KpiCard(
                                     label: 'AI confidence',
-                                    value:
-                                        '${data.summary.averageAiConfidencePercent.toStringAsFixed(0)}%',
+                                    value: data.summary.averageAiConfidencePercent != null
+                                        ? '${data.summary.averageAiConfidencePercent!.toStringAsFixed(0)}%'
+                                        : '—',
                                     changePercent:
                                         data.summary.confidenceChangePercent,
                                     positiveIsGood: true,

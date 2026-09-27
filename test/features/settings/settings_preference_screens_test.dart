@@ -20,6 +20,9 @@ import 'package:baitguard/features/settings/views/default_view_screen.dart';
 import 'package:baitguard/features/settings/views/settings_screen.dart';
 import 'package:baitguard/features/settings/views/privacy_policy_screen.dart';
 import 'package:baitguard/features/settings/views/terms_conditions_screen.dart';
+import 'package:baitguard/domain/repositories/auth_repository.dart';
+import 'package:baitguard/data/repositories/mock/mock_auth_repository.dart';
+import 'package:baitguard/data/repositories/mock/mock_baitguard_data_source.dart';
 import 'package:baitguard/features/onboarding/views/welcome_screen.dart';
 
 class _ScreenSettingsRepository implements SettingsRepository {
@@ -127,9 +130,11 @@ Widget _settingsFlowApp({
   required AppSessionController session,
   required ActiveFacilityController activeFacilityController,
 }) {
+  final dataSource = MockBaitGuardDataSource.seeded();
   return MultiProvider(
     providers: [
       Provider<SettingsRepository>.value(value: repository),
+      Provider<AuthRepository>.value(value: MockAuthRepository(dataSource)),
       ChangeNotifierProvider<AppSessionController>.value(value: session),
     ],
     child: MaterialApp(
@@ -155,22 +160,16 @@ Widget _settingsFlowApp({
 
 Future<void> _openDefaultFacility(WidgetTester tester) async {
   final row = find.text('Default Facility');
-  await tester.scrollUntilVisible(
-    row,
-    300,
-    scrollable: find.byType(CustomScrollView),
-  );
+  await tester.ensureVisible(row);
+  await tester.pumpAndSettle();
   await tester.tap(row);
   await tester.pumpAndSettle();
 }
 
 Future<void> _openSettingsRow(WidgetTester tester, String label) async {
   final row = find.text(label);
-  await tester.scrollUntilVisible(
-    row,
-    350,
-    scrollable: find.byType(CustomScrollView),
-  );
+  await tester.ensureVisible(row);
+  await tester.pumpAndSettle();
   await tester.tap(row);
   await tester.pumpAndSettle();
 }
@@ -312,6 +311,7 @@ void main() {
       expect(activeFacilityController.wasDisposed, isFalse);
       expect(activeFacilityController.selectSite('unauthorized'), isFalse);
       expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 4));
     },
   );
 
@@ -346,11 +346,8 @@ void main() {
     expect(tester.takeException(), isNull);
 
     final logout = find.text('Log Out');
-    await tester.scrollUntilVisible(
-      logout,
-      400,
-      scrollable: find.byType(CustomScrollView),
-    );
+    await tester.ensureVisible(logout);
+    await tester.pumpAndSettle();
     await tester.tap(logout);
     await tester.pumpAndSettle();
 
@@ -426,7 +423,10 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Your Rights'),
         250,
-        scrollable: find.byKey(const Key('legalScreenScroll')),
+        scrollable: find.descendant(
+          of: find.byKey(const Key('legalScreenScroll')),
+          matching: find.byType(Scrollable),
+        ),
       );
       expect(tester.takeException(), isNull);
     },
@@ -449,7 +449,10 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Limitation of Liability'),
         250,
-        scrollable: find.byKey(const Key('legalScreenScroll')),
+        scrollable: find.descendant(
+          of: find.byKey(const Key('legalScreenScroll')),
+          matching: find.byType(Scrollable),
+        ),
       );
       expect(tester.takeException(), isNull);
     },
@@ -539,11 +542,8 @@ void main() {
     }
 
     final logout = find.text('Log Out');
-    await tester.scrollUntilVisible(
-      logout,
-      400,
-      scrollable: find.byType(CustomScrollView),
-    );
+    await tester.ensureVisible(logout);
+    await tester.pumpAndSettle();
     await tester.tap(logout);
     await tester.pumpAndSettle();
 

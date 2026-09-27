@@ -28,7 +28,7 @@ class Station {
     required this.batteryPercentage,
     this.temperature,
     this.humidity,
-    required this.isTampered,
+    this.isTampered = false,
     required this.lastSeen,
     this.notificationsMuted = false,
     this.hasCamera = false,
@@ -66,7 +66,27 @@ class Station {
       lastSeen: lastSeen ?? this.lastSeen,
       notificationsMuted: notificationsMuted ?? this.notificationsMuted,
       hasCamera: hasCamera ?? this.hasCamera,
-      lastRefilledAt: lastRefilledAt ?? this.lastRefilledAt,
     );
   }
+
+  bool get isOnline => status != StationStatus.offline;
 }
+
+/// Default low bait threshold across BaitGuard.
+const double kLowBaitThreshold = 25.0;
+
+/// Returns true when [station] is considered to have low bait.
+bool stationIsLowBait(Station station) =>
+    station.baitPercentage <= kLowBaitThreshold;
+
+/// Returns true when [station] requires operational attention.
+/// Covers alert status, tampered, and offline states.
+bool stationNeedsAttention(Station station) =>
+    station.status == StationStatus.alert ||
+    station.status == StationStatus.offline ||
+    station.isTampered;
+
+/// Returns true when [station] is considered connected / online.
+bool stationIsConnected(Station station) =>
+    station.status != StationStatus.offline;
+

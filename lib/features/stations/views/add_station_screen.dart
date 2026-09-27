@@ -277,63 +277,63 @@ class _AddStationScreenState extends State<AddStationScreen> {
   }
 
   Widget _buildConnectivityCard(AddStationViewModel vm) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.xl),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Connectivity',
-            style: AppTypography.manropeBold.copyWith(
-              fontSize: 18,
-              color: AppColors.textPrimary,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppRadii.xl),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Connectivity',
+              style: AppTypography.manropeBold.copyWith(
+                fontSize: 18,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          RadioGroup<StationConnectivityType>(
-            groupValue: vm.connectivityType,
-            onChanged: (val) {
-              if (val != null) {
-                vm.setConnectivityType(val);
-              }
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildRadioOption(
-                  label: 'Wi-Fi (Recommended)',
-                  value: StationConnectivityType.wifi,
-                ),
-                if (vm.connectivityType == StationConnectivityType.wifi)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 32.0,
-                      bottom: AppSpacing.sm,
-                      top: 4,
-                    ),
-                    child: _buildTextField(
-                      label: 'Network Name',
-                      hint: 'Enter Wi-Fi network name',
-                      errorText: vm.wifiNetworkNameError,
-                      onChanged: vm.setWifiNetworkName,
-                    ),
+            const SizedBox(height: AppSpacing.md),
+            RadioGroup<StationConnectivityType>(
+              groupValue: vm.connectivityType,
+              onChanged: (val) {
+                if (val != null) {
+                  vm.setConnectivityType(val);
+                }
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildRadioOption(
+                    label: 'Wi-Fi (Recommended)',
+                    value: StationConnectivityType.wifi,
                   ),
-                _buildRadioOption(
-                  label: '4G / LTE',
-                  value: StationConnectivityType.cellular,
-                ),
-                _buildRadioOption(
-                  label: 'LoRaWAN',
-                  value: StationConnectivityType.lorawan,
-                ),
-              ],
+                  if (vm.connectivityType == StationConnectivityType.wifi)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 32.0,
+                        bottom: AppSpacing.sm,
+                        top: 4,
+                      ),
+                      child: _buildTextField(
+                        label: 'Network Name',
+                        hint: 'Enter Wi-Fi network name',
+                        errorText: vm.wifiNetworkNameError,
+                        onChanged: vm.setWifiNetworkName,
+                      ),
+                    ),
+                  _buildRadioOption(
+                    label: '4G / LTE',
+                    value: StationConnectivityType.cellular,
+                  ),
+                  _buildRadioOption(
+                    label: 'LoRaWAN',
+                    value: StationConnectivityType.lorawan,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

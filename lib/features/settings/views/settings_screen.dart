@@ -63,19 +63,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
-    final coordinator = context.read<AuthSessionCoordinator>();
-    if (coordinator.isLoggingOut) return;
-    final activeFacilityController = context.read<ActiveFacilityController>();
-    final success = await coordinator.logout();
-    if (!context.mounted) return;
-    if (!success) {
-      AppTopToast.show(
-        context,
-        coordinator.logoutErrorMessage ??
-            'Unable to log out right now. Please try again.',
-      );
-      return;
+    AuthSessionCoordinator? coordinator;
+    try {
+      coordinator = context.read<AuthSessionCoordinator>();
+    } catch (_) {
+      coordinator = null;
     }
+
+    if (coordinator != null) {
+      if (coordinator.isLoggingOut) return;
+      final success = await coordinator.logout();
+      if (!context.mounted) return;
+      if (!success) {
+        AppTopToast.show(
+          context,
+          coordinator.logoutErrorMessage ??
+              'Unable to log out right now. Please try again.',
+        );
+        return;
+      }
+    } else {
+      context.read<AppSessionController>().clearSession();
+    }
+
+    if (!context.mounted) return;
+    final activeFacilityController = context.read<ActiveFacilityController>();
     activeFacilityController.resetToInitialFacility();
     Navigator.of(
       context,

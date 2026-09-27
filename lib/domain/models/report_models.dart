@@ -9,23 +9,23 @@ class ReportPeriod {
 
 class ReportSummary {
   final int totalDetections;
-  final int baitRefills;
-  final double systemUptimePercent;
-  final double averageAiConfidencePercent;
-  final double detectionsChangePercent;
-  final double baitRefillsChangePercent;
-  final double uptimeChangePercent;
-  final double confidenceChangePercent;
+  final int? baitRefills;
+  final double? systemUptimePercent;
+  final double? averageAiConfidencePercent;
+  final double? detectionsChangePercent;
+  final double? baitRefillsChangePercent;
+  final double? uptimeChangePercent;
+  final double? confidenceChangePercent;
 
   const ReportSummary({
     required this.totalDetections,
-    required this.baitRefills,
-    required this.systemUptimePercent,
-    required this.averageAiConfidencePercent,
-    required this.detectionsChangePercent,
-    required this.baitRefillsChangePercent,
-    required this.uptimeChangePercent,
-    required this.confidenceChangePercent,
+    this.baitRefills,
+    this.systemUptimePercent,
+    this.averageAiConfidencePercent,
+    this.detectionsChangePercent,
+    this.baitRefillsChangePercent,
+    this.uptimeChangePercent,
+    this.confidenceChangePercent,
   });
 }
 
@@ -41,16 +41,16 @@ class StationReportLedgerEntry {
   final String stationCode;
   final String location;
   final int detections;
-  final int baitRefills;
-  final double uptimePercent;
+  final int? baitRefills;
+  final double? uptimePercent;
 
   const StationReportLedgerEntry({
     required this.stationId,
     required this.stationCode,
     required this.location,
     required this.detections,
-    required this.baitRefills,
-    required this.uptimePercent,
+    this.baitRefills,
+    this.uptimePercent,
   });
 }
 

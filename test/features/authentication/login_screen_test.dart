@@ -84,9 +84,10 @@ void main() {
     await tester.pump(); // Start loading
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    // Wait for mock login to complete (500ms in MockAuthRepository)
+    // Wait for mock login to complete (500ms in MockAuthRepository + 200ms in MockUserRepository)
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 500));
 
     // 10. Successful login opens the admin app shell for admin role
     expect(find.byType(AdminAppShell), findsOneWidget);

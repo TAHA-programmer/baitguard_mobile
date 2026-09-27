@@ -66,10 +66,12 @@ class StationLedgerCard extends StatelessWidget {
                 final displayEntries = entries.take(5).toList();
                 final entry = displayEntries[index];
 
-                final isHighUptime = entry.uptimePercent >= 95;
-                final uptimeColor = isHighUptime
-                    ? AppColors.successGreen
-                    : AppColors.warningAmber;
+                final isHighUptime = (entry.uptimePercent ?? 100) >= 95;
+                final uptimeColor = entry.uptimePercent == null
+                    ? AppColors.textTertiary
+                    : (isHighUptime
+                        ? AppColors.successGreen
+                        : AppColors.warningAmber);
 
                 // Parse station code only (strip location from name if embedded)
                 final stationCode = entry.stationCode
@@ -178,7 +180,9 @@ class StationLedgerCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                '${entry.uptimePercent.toStringAsFixed(0)}%',
+                                entry.uptimePercent != null
+                                    ? '${entry.uptimePercent!.toStringAsFixed(0)}%'
+                                    : '—',
                                 style: AppTypography.manropeSemiBold.copyWith(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -186,15 +190,16 @@ class StationLedgerCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 3),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(2),
-                                child: LinearProgressIndicator(
-                                  value: entry.uptimePercent / 100,
-                                  backgroundColor: Colors.grey[200],
-                                  color: uptimeColor,
-                                  minHeight: 4,
+                              if (entry.uptimePercent != null)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: LinearProgressIndicator(
+                                    value: entry.uptimePercent! / 100,
+                                    backgroundColor: Colors.grey[200],
+                                    color: uptimeColor,
+                                    minHeight: 4,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

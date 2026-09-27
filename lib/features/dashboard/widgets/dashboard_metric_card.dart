@@ -50,14 +50,21 @@ class DashboardMetricCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                value,
-                style: AppTypography.manropeExtraBold.copyWith(
-                  fontSize: 28,
-                  color: valueColor,
-                  height: 1.0,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: AppTypography.manropeExtraBold.copyWith(
+                      fontSize: 28,
+                      color: valueColor,
+                      height: 1.0,
+                    ),
+                  ),
                 ),
               ),
+              const SizedBox(width: AppSpacing.xs),
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(

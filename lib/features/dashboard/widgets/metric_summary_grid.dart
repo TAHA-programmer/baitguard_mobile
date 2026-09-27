@@ -30,7 +30,7 @@ class MetricSummaryGrid extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: AppSpacing.md,
           crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: 1.5,
+          childAspectRatio: constraints.maxWidth < 340 ? 1.2 : 1.5,
           children: [
             DashboardMetricCard(
               title: 'Total stations',

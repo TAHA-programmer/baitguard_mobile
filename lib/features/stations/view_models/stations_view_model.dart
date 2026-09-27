@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../app/state/app_session_controller.dart';
-import '../../../data/repositories/mock/mock_station_repository.dart'
-    show stationIsLowBait, stationNeedsAttention, stationIsConnected;
 import '../../../domain/models/detected_species.dart';
 import '../../../domain/models/detection_event.dart';
 import '../../../domain/models/station.dart';
@@ -79,21 +77,25 @@ class StationsViewModel extends ChangeNotifier {
     _facilityController.addListener(_onFacilityChanged);
   }
 
+  bool _disposed = false;
+
   void _onFacilityChanged() {
+    if (_disposed) return;
     final newSiteId = _facilityController.selectedSiteId;
     if (newSiteId == null) return;
     if (newSiteId == _lastLoadedSiteId) return; // No-op on same site
+    _eventCache.clear();
     load();
   }
 
   Future<void> load() async {
-    if (_isLoading) return;
+    if (_disposed || _isLoading) return;
 
     final user = _sessionController.currentUser;
     if (user == null) {
       _status = StationsLoadStatus.failure;
       _errorMessage = 'No active session. Please sign in again.';
-      notifyListeners();
+      if (!_disposed) notifyListeners();
       return;
     }
 
@@ -101,27 +103,27 @@ class StationsViewModel extends ChangeNotifier {
     if (siteId == null) {
       _status = StationsLoadStatus.failure;
       _errorMessage = 'No permitted facility available.';
-      notifyListeners();
+      if (!_disposed) notifyListeners();
       return;
     }
 
     _isLoading = true;
     _status = StationsLoadStatus.loading;
     _errorMessage = null;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
 
     await _fetchStations(siteId: siteId, isRefresh: false);
   }
 
   Future<void> refresh() async {
-    if (_isLoading) return;
+    if (_disposed || _isLoading) return;
 
     final siteId = _facilityController.selectedSiteId;
     if (siteId == null) return;
 
     _isLoading = true;
     // Keep status as-is so existing data stays visible.
-    notifyListeners();
+    if (!_disposed) notifyListeners();
 
     await _fetchStations(siteId: siteId, isRefresh: true);
   }
@@ -138,6 +140,10 @@ class StationsViewModel extends ChangeNotifier {
 
       final stations = await _stationRepository.getStations(siteId: siteId);
 
+      if (isRefresh) {
+        _eventCache.clear();
+      }
+
       // Load events for each station (use cache when available).
       for (final station in stations) {
         if (!_eventCache.containsKey(station.id)) {
@@ -146,6 +152,8 @@ class StationsViewModel extends ChangeNotifier {
         }
       }
 
+      if (_disposed) return;
+
       _allStations = List.unmodifiable(stations);
       _lastLoadedSiteId = siteId;
       _status = StationsLoadStatus.success;
@@ -153,6 +161,7 @@ class StationsViewModel extends ChangeNotifier {
 
       _applyFilterAndSearch();
     } catch (e) {
+      if (_disposed) return;
       if (isRefresh && _allStations.isNotEmpty) {
         _refreshErrorMessage = 'Failed to refresh stations. Please try again.';
         _refreshErrorEventId++;
@@ -162,7 +171,7 @@ class StationsViewModel extends ChangeNotifier {
       }
     } finally {
       _isLoading = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -382,6 +391,7 @@ class StationsViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _facilityController.removeListener(_onFacilityChanged);
     super.dispose();
   }

@@ -7,7 +7,7 @@ import '../../../../app/theme/app_radii.dart';
 class KpiCard extends StatelessWidget {
   final String label;
   final String value;
-  final double changePercent;
+  final double? changePercent;
   final bool positiveIsGood;
 
   /// Optional override for the value color (Figma uses distinct colors per KPI)
@@ -17,16 +17,18 @@ class KpiCard extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
-    required this.changePercent,
+    this.changePercent,
     this.positiveIsGood = true,
     this.valueColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = changePercent > 0;
-    final isNegative = changePercent < 0;
-    final isZero = changePercent == 0;
+    final hasChange = changePercent != null;
+    final changeVal = changePercent ?? 0.0;
+    final isPositive = changeVal > 0;
+    final isNegative = changeVal < 0;
+    final isZero = changeVal == 0;
 
     bool isGood;
     if (isZero) {
@@ -41,9 +43,8 @@ class KpiCard extends StatelessWidget {
     final arrowIcon = isPositive
         ? Icons.arrow_upward
         : (isNegative ? Icons.arrow_downward : Icons.remove);
-
     final prefix = isPositive ? '+' : '';
-    final formattedChange = '$prefix${changePercent.toStringAsFixed(1)}%';
+    final formattedChange = '$prefix${changeVal.toStringAsFixed(1)}%';
 
     return Container(
       decoration: BoxDecoration(
@@ -81,25 +82,27 @@ class KpiCard extends StatelessWidget {
               color: valueColor ?? AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(arrowIcon, size: 12, color: changeColor),
-              const SizedBox(width: 2),
-              Flexible(
-                child: Text(
-                  formattedChange,
-                  style: AppTypography.manropeRegular.copyWith(
-                    fontSize: 12,
-                    color: changeColor,
-                    fontWeight: FontWeight.w600,
+          if (hasChange) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(arrowIcon, size: 12, color: changeColor),
+                const SizedBox(width: 2),
+                Flexible(
+                  child: Text(
+                    formattedChange,
+                    style: AppTypography.manropeRegular.copyWith(
+                      fontSize: 12,
+                      color: changeColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );

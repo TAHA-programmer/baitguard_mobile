@@ -101,14 +101,18 @@ class SpeciesBreakdownCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: AppSpacing.sm),
-                            Text(
-                              _getLabel(item.species),
-                              style: AppTypography.manropeSemiBold.copyWith(
-                                fontSize: 13,
-                                color: AppColors.textPrimary,
+                            Expanded(
+                              child: Text(
+                                _getLabel(item.species),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.manropeSemiBold.copyWith(
+                                  fontSize: 13,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
                             ),
-                            const Spacer(),
+                            const SizedBox(width: AppSpacing.xs),
                             Text(
                               '${item.percentage.toInt()}%',
                               style: AppTypography.manropeRegular.copyWith(
