@@ -134,11 +134,10 @@ class ActivateAccountViewModel extends ChangeNotifier {
     });
   }
 
-  Future<bool> resendVerification() =>
-      _run(() async {
-        await _authRepository.sendEmailVerification();
-        return true;
-      });
+  Future<bool> resendVerification() => _run(() async {
+    await _authRepository.sendEmailVerification();
+    return true;
+  });
 
   Future<bool> checkVerification() async {
     if (isLoading || _disposed) return false;

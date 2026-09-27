@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../../domain/models/app_user.dart';
 import '../../../domain/models/dashboard/activity_data_point.dart';
 import '../../../domain/models/dashboard/admin_dashboard_data.dart';
@@ -9,29 +10,37 @@ import '../../../domain/models/dashboard/station_map_marker.dart';
 import '../../../domain/models/dashboard/station_summary_metrics.dart';
 import '../../../domain/models/dashboard/user_dashboard_data.dart';
 import '../../../domain/models/dashboard/dashboard_species.dart';
+import '../../../domain/models/alert_status.dart';
+import '../../../domain/models/alert_severity.dart';
 import '../../../domain/models/site.dart';
 import '../../../domain/models/station.dart';
 import '../../../domain/models/station_status.dart';
 import '../../../domain/repositories/dashboard_repository.dart';
+import '../../../domain/repositories/user_repository.dart';
 import 'realtime_station_data_source.dart';
 
 class RealtimeDashboardRepository implements DashboardRepository {
   final RealtimeStationDataSource _dataSource;
+  final UserRepository? _userRepository;
 
-  RealtimeDashboardRepository(this._dataSource);
+  RealtimeDashboardRepository(
+    this._dataSource, {
+    UserRepository? userRepository,
+  }) : _userRepository = userRepository;
 
   @override
   Future<UserDashboardData> getUserDashboard({
     required AppUser user,
     String? siteId,
   }) async {
-    final selectedSiteId = siteId ??
-        (user.siteAccessIds.isNotEmpty
-            ? user.siteAccessIds.first
-            : RealtimeStationDataSource.kPilotFacilityId);
+    final selectedSiteId =
+        siteId ??
+        (user.siteAccessIds.isNotEmpty ? user.siteAccessIds.first : null);
 
-    if (selectedSiteId != RealtimeStationDataSource.kPilotFacilityId) {
-      return _buildEmptyUserDashboard(user, selectedSiteId);
+    if (selectedSiteId == null ||
+        !user.siteAccessIds.contains(selectedSiteId) ||
+        selectedSiteId != RealtimeStationDataSource.kPilotFacilityId) {
+      return _buildEmptyUserDashboard(user, selectedSiteId ?? '');
     }
 
     final station = await _dataSource.fetchStation(
@@ -58,29 +67,33 @@ class RealtimeDashboardRepository implements DashboardRepository {
     final mapMarkers = _buildMapMarkers(station);
     final facilityZones = _buildFacilityZones(station);
 
-    int healthScore = 98;
-    String statusMessage = 'ALL SYSTEMS NOMINAL';
+    int healthScore;
+    String healthStatusMessage;
     if (station == null || station.status == StationStatus.offline) {
-      healthScore = 60;
-      statusMessage = 'STATION OFFLINE';
+      healthScore = 0;
+      healthStatusMessage = 'STATION OFFLINE';
     } else if (station.status == StationStatus.lowBait) {
-      healthScore = 80;
-      statusMessage = 'LOW BAIT ATTENTION';
-    } else if (station.status == StationStatus.alert) {
-      healthScore = 70;
-      statusMessage = 'RODENT ACTIVITY DETECTED';
+      healthScore = station.baitPercentage.round().clamp(0, 100);
+      healthStatusMessage = 'LOW BAIT ATTENTION';
+    } else {
+      healthScore = ((station.baitPercentage + station.batteryPercentage) / 2)
+          .round()
+          .clamp(0, 100);
+      healthStatusMessage = 'ALL SYSTEMS NOMINAL';
     }
 
     return UserDashboardData(
       user: user,
       healthScore: healthScore,
-      healthScoreChange: 0,
-      statusMessage: statusMessage,
+      healthScoreChange: 0, // No unmeasured arbitrary changes
+      statusMessage: healthStatusMessage,
       lastUpdatedAt: DateTime.now(),
       stationMetrics: metrics,
       detectionsToday: detectionsToday,
       activityChangePercentage: 0.0,
-      unreadAlertCount: alerts.length,
+      unreadAlertCount: alerts
+          .where((a) => a.status == AlertStatus.open)
+          .length,
       speciesBreakdown: speciesBreakdown,
       activitySeries: activitySeries,
       mapMarkers: mapMarkers,
@@ -94,7 +107,9 @@ class RealtimeDashboardRepository implements DashboardRepository {
     required AppUser admin,
     String? siteId,
   }) async {
-    final selectedSiteId = siteId ?? RealtimeStationDataSource.kPilotFacilityId;
+    final selectedSiteId =
+        siteId ??
+        (admin.siteAccessIds.isNotEmpty ? admin.siteAccessIds.first : null);
 
     final availableSites = admin.siteAccessIds
         .map(
@@ -108,24 +123,19 @@ class RealtimeDashboardRepository implements DashboardRepository {
         )
         .toList();
 
-    if (availableSites.isEmpty) {
-      availableSites.add(
-        const Site(
-          id: RealtimeStationDataSource.kPilotFacilityId,
-          name: 'Warehouse A',
-          location: 'Main Site',
-        ),
-      );
+    if (selectedSiteId == null ||
+        !admin.siteAccessIds.contains(selectedSiteId) ||
+        selectedSiteId != RealtimeStationDataSource.kPilotFacilityId) {
+      final fallbackSite = availableSites.isNotEmpty
+          ? availableSites.first
+          : const Site(id: '', name: 'No Facility', location: '');
+      return _buildEmptyAdminDashboard(admin, fallbackSite, availableSites);
     }
 
     final selectedSite = availableSites.firstWhere(
       (s) => s.id == selectedSiteId,
       orElse: () => availableSites.first,
     );
-
-    if (selectedSiteId != RealtimeStationDataSource.kPilotFacilityId) {
-      return _buildEmptyAdminDashboard(admin, selectedSite, availableSites);
-    }
 
     final station = await _dataSource.fetchStation(
       RealtimeStationDataSource.kPilotStationId,
@@ -151,29 +161,53 @@ class RealtimeDashboardRepository implements DashboardRepository {
     final mapMarkers = _buildMapMarkers(station);
     final facilityZones = _buildFacilityZones(station);
 
-    int healthScore = 98;
-    String healthStatusMessage = 'ALL SYSTEMS NOMINAL';
-    DashboardSystemStatus systemStatus = DashboardSystemStatus.healthy;
+    int healthScore;
+    String healthStatusMessage;
+    DashboardSystemStatus systemStatus;
 
     if (station == null || station.status == StationStatus.offline) {
-      healthScore = 60;
+      healthScore = 0;
       healthStatusMessage = 'STATION OFFLINE';
       systemStatus = DashboardSystemStatus.warning;
     } else if (station.status == StationStatus.lowBait) {
-      healthScore = 80;
+      healthScore = station.baitPercentage.round().clamp(0, 100);
       healthStatusMessage = 'LOW BAIT ATTENTION';
       systemStatus = DashboardSystemStatus.warning;
     } else if (station.status == StationStatus.alert) {
-      healthScore = 70;
+      healthScore = station.batteryPercentage.round().clamp(0, 100);
       healthStatusMessage = 'RODENT ACTIVITY DETECTED';
       systemStatus = DashboardSystemStatus.critical;
+    } else {
+      healthScore = ((station.baitPercentage + station.batteryPercentage) / 2)
+          .round()
+          .clamp(0, 100);
+      healthStatusMessage = 'ALL SYSTEMS NOMINAL';
+      systemStatus = DashboardSystemStatus.healthy;
     }
+
+    int realUserCount = 0;
+    final userRepo = _userRepository;
+    if (userRepo != null) {
+      try {
+        final users = await userRepo.getUsers();
+        realUserCount = users.length;
+      } catch (_) {
+        realUserCount = 0;
+      }
+    }
+
+    final openAlerts = alerts
+        .where((a) => a.status == AlertStatus.open)
+        .toList();
+    final criticalCount = openAlerts
+        .where((a) => a.severity == AlertSeverity.critical)
+        .length;
 
     return AdminDashboardData(
       selectedSite: selectedSite,
       availableSites: availableSites,
       lastUpdatedAt: DateTime.now(),
-      userCount: admin.siteAccessIds.length,
+      userCount: realUserCount,
       pendingRequestCount: 0,
       newPendingRequestCountToday: 0,
       systemStatus: systemStatus,
@@ -183,9 +217,8 @@ class RealtimeDashboardRepository implements DashboardRepository {
       stationMetrics: metrics,
       detectionsToday: detectionsToday,
       detectionsChangePercentage: 0.0,
-      criticalAlertCount:
-          alerts.where((a) => a.severity.name == 'critical').length,
-      unreadAlertCount: alerts.length,
+      criticalAlertCount: criticalCount,
+      unreadAlertCount: openAlerts.where((a) => !a.isRead).length,
       totalAlertCount: alerts.length,
       recentAlerts: recentAlertItems,
       activitySeries: activitySeries,
@@ -195,8 +228,89 @@ class RealtimeDashboardRepository implements DashboardRepository {
     );
   }
 
+  @override
+  Stream<UserDashboardData> watchUserDashboard({
+    required AppUser user,
+    String? siteId,
+  }) {
+    late StreamController<UserDashboardData> controller;
+    StreamSubscription? sub1;
+    StreamSubscription? sub2;
+
+    controller = StreamController<UserDashboardData>.broadcast(
+      onListen: () async {
+        try {
+          final initial = await getUserDashboard(user: user, siteId: siteId);
+          if (!controller.isClosed) controller.add(initial);
+        } catch (e) {
+          if (!controller.isClosed) controller.addError(e);
+        }
+
+        void emitUpdate() async {
+          try {
+            final updated = await getUserDashboard(user: user, siteId: siteId);
+            if (!controller.isClosed) controller.add(updated);
+          } catch (e) {
+            if (!controller.isClosed) controller.addError(e);
+          }
+        }
+
+        sub1 = _dataSource.stationStream.listen((_) => emitUpdate());
+        sub2 = _dataSource.eventsStream.listen((_) => emitUpdate());
+      },
+      onCancel: () {
+        sub1?.cancel();
+        sub2?.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
+
+  @override
+  Stream<AdminDashboardData> watchAdminDashboard({
+    required AppUser admin,
+    String? siteId,
+  }) {
+    late StreamController<AdminDashboardData> controller;
+    StreamSubscription? sub1;
+    StreamSubscription? sub2;
+
+    controller = StreamController<AdminDashboardData>.broadcast(
+      onListen: () async {
+        try {
+          final initial = await getAdminDashboard(admin: admin, siteId: siteId);
+          if (!controller.isClosed) controller.add(initial);
+        } catch (e) {
+          if (!controller.isClosed) controller.addError(e);
+        }
+
+        void emitUpdate() async {
+          try {
+            final updated = await getAdminDashboard(
+              admin: admin,
+              siteId: siteId,
+            );
+            if (!controller.isClosed) controller.add(updated);
+          } catch (e) {
+            if (!controller.isClosed) controller.addError(e);
+          }
+        }
+
+        sub1 = _dataSource.stationStream.listen((_) => emitUpdate());
+        sub2 = _dataSource.eventsStream.listen((_) => emitUpdate());
+      },
+      onCancel: () {
+        sub1?.cancel();
+        sub2?.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
+
   // ---------------------------------------------------------------------------
-  // Helper calculations
+  // Metric and Visualization Computation Helpers
   // ---------------------------------------------------------------------------
 
   StationSummaryMetrics _computeStationMetrics(Station? station) {
@@ -204,20 +318,19 @@ class RealtimeDashboardRepository implements DashboardRepository {
       return const StationSummaryMetrics(
         totalCount: 0,
         activeCount: 0,
-        refillNeededCount: 0,
         offlineCount: 0,
+        refillNeededCount: 0,
       );
     }
 
-    final isConn = stationIsConnected(station);
-    final isLow = stationIsLowBait(station);
-    final isOff = station.status == StationStatus.offline;
+    final isOnline = station.status != StationStatus.offline;
+    final isLowBait = station.status == StationStatus.lowBait;
 
     return StationSummaryMetrics(
       totalCount: 1,
-      activeCount: isConn ? 1 : 0,
-      refillNeededCount: isLow ? 1 : 0,
-      offlineCount: isOff ? 1 : 0,
+      activeCount: isOnline ? 1 : 0,
+      offlineCount: isOnline ? 0 : 1,
+      refillNeededCount: isLowBait ? 1 : 0,
     );
   }
 
@@ -225,24 +338,26 @@ class RealtimeDashboardRepository implements DashboardRepository {
     List<dynamic> events,
     DateTime now,
   ) {
-    final days = <ActivityDataPoint>[];
+    final points = <ActivityDataPoint>[];
+
     for (int i = 6; i >= 0; i--) {
-      final day = DateTime(now.year, now.month, now.day - i);
+      final date = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: i));
+
       final count = events.where((e) {
         final local = (e.timestamp as DateTime).toLocal();
-        return local.year == day.year &&
-            local.month == day.month &&
-            local.day == day.day;
+        return local.year == date.year &&
+            local.month == date.month &&
+            local.day == date.day;
       }).length;
 
-      days.add(
-        ActivityDataPoint(
-          time: day,
-          count: count,
-        ),
-      );
+      points.add(ActivityDataPoint(time: date, count: count));
     }
-    return days;
+
+    return points;
   }
 
   List<SpeciesBreakdownItem> _computeSpeciesBreakdown(List<dynamic> events) {
@@ -319,7 +434,7 @@ class RealtimeDashboardRepository implements DashboardRepository {
     return const [
       FacilityMapZone(
         id: 'zone_a',
-        label: 'Zone A - Main Warehouse',
+        label: 'Zone A',
         left: 0.1,
         top: 0.1,
         width: 0.8,
@@ -331,24 +446,23 @@ class RealtimeDashboardRepository implements DashboardRepository {
   }
 
   UserDashboardData _buildEmptyUserDashboard(AppUser user, String siteId) {
-    final now = DateTime.now();
     return UserDashboardData(
       user: user,
       healthScore: 0,
       healthScoreChange: 0,
-      statusMessage: 'NO ACTIVE DEPLOYMENT',
-      lastUpdatedAt: now,
+      statusMessage: 'NO ACTIVE TELEMETRY',
+      lastUpdatedAt: DateTime.now(),
       stationMetrics: const StationSummaryMetrics(
         totalCount: 0,
         activeCount: 0,
-        refillNeededCount: 0,
         offlineCount: 0,
+        refillNeededCount: 0,
       ),
       detectionsToday: 0,
       activityChangePercentage: 0.0,
       unreadAlertCount: 0,
       speciesBreakdown: const [],
-      activitySeries: _compute7DayActivitySeries(const [], now),
+      activitySeries: const [],
       mapMarkers: const [],
       facilityZones: const [],
       recentAlerts: const [],
@@ -360,23 +474,22 @@ class RealtimeDashboardRepository implements DashboardRepository {
     Site selectedSite,
     List<Site> availableSites,
   ) {
-    final now = DateTime.now();
     return AdminDashboardData(
       selectedSite: selectedSite,
       availableSites: availableSites,
-      lastUpdatedAt: now,
+      lastUpdatedAt: DateTime.now(),
       userCount: 0,
       pendingRequestCount: 0,
       newPendingRequestCountToday: 0,
       systemStatus: DashboardSystemStatus.healthy,
       systemHealthScore: 0,
       healthScoreChange: 0,
-      healthStatusMessage: 'NO ACTIVE DEPLOYMENT',
+      healthStatusMessage: 'NO ACTIVE TELEMETRY',
       stationMetrics: const StationSummaryMetrics(
         totalCount: 0,
         activeCount: 0,
-        refillNeededCount: 0,
         offlineCount: 0,
+        refillNeededCount: 0,
       ),
       detectionsToday: 0,
       detectionsChangePercentage: 0.0,
@@ -384,7 +497,7 @@ class RealtimeDashboardRepository implements DashboardRepository {
       unreadAlertCount: 0,
       totalAlertCount: 0,
       recentAlerts: const [],
-      activitySeries: _compute7DayActivitySeries(const [], now),
+      activitySeries: const [],
       speciesBreakdown: const [],
       mapMarkers: const [],
       facilityZones: const [],

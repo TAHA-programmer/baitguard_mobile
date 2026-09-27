@@ -191,7 +191,9 @@ class FirestoreAccountActivationRepository
         !const ['request', 'admin'].contains(data['approvalSource']) ||
         rawFacilities is! List ||
         rawFacilities.isEmpty ||
-        rawFacilities.any((value) => value is! String || value.trim().isEmpty)) {
+        rawFacilities.any(
+          (value) => value is! String || value.trim().isEmpty,
+        )) {
       throw const AccountActivationFailure(
         AccountActivationFailureType.invalidInvitation,
       );

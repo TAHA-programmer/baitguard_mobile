@@ -17,6 +17,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/access_request_repository.dart';
 import '../../domain/repositories/dashboard_repository.dart';
 import '../../domain/repositories/station_repository.dart';
+import '../../data/repositories/firebase/realtime_station_data_source.dart';
 import '../../app/state/app_session_controller.dart';
 import '../../app/state/active_facility_controller.dart';
 import '../../features/navigation/views/user_app_shell.dart';
@@ -94,8 +95,7 @@ class AppRouter {
         builder: (context) => ChangeNotifierProvider(
           create: (_) => ActivateAccountViewModel(
             authRepository: context.read<AuthRepository>(),
-            activationRepository: context
-                .read<AccountActivationRepository>(),
+            activationRepository: context.read<AccountActivationRepository>(),
             sessionController: context.read<AppSessionController>(),
             userRepository: context.read<UserRepository>(),
           ),
@@ -135,9 +135,27 @@ class AppRouter {
           return MultiProvider(
             providers: [
               ChangeNotifierProvider<ActiveFacilityController>(
-                create: (_) => ActiveFacilityController(
-                  permittedSiteIds: List<String>.unmodifiable(permittedSiteIds),
-                ),
+                create: (ctx) {
+                  final controller = ActiveFacilityController(
+                    permittedSiteIds: List<String>.unmodifiable(
+                      permittedSiteIds,
+                    ),
+                  );
+                  try {
+                    final ds = ctx.read<RealtimeStationDataSource>();
+                    ds.bindSessionAndFacility(
+                      user: user,
+                      facilityId: controller.selectedSiteId,
+                    );
+                    controller.addListener(() {
+                      ds.bindSessionAndFacility(
+                        user: session.currentUser,
+                        facilityId: controller.selectedSiteId,
+                      );
+                    });
+                  } catch (_) {}
+                  return controller;
+                },
               ),
               ChangeNotifierProxyProvider<
                 ActiveFacilityController,
@@ -181,9 +199,27 @@ class AppRouter {
           return MultiProvider(
             providers: [
               ChangeNotifierProvider<ActiveFacilityController>(
-                create: (_) => ActiveFacilityController(
-                  permittedSiteIds: List<String>.unmodifiable(permittedSiteIds),
-                ),
+                create: (ctx) {
+                  final controller = ActiveFacilityController(
+                    permittedSiteIds: List<String>.unmodifiable(
+                      permittedSiteIds,
+                    ),
+                  );
+                  try {
+                    final ds = ctx.read<RealtimeStationDataSource>();
+                    ds.bindSessionAndFacility(
+                      user: user,
+                      facilityId: controller.selectedSiteId,
+                    );
+                    controller.addListener(() {
+                      ds.bindSessionAndFacility(
+                        user: session.currentUser,
+                        facilityId: controller.selectedSiteId,
+                      );
+                    });
+                  } catch (_) {}
+                  return controller;
+                },
               ),
               ChangeNotifierProxyProvider<
                 ActiveFacilityController,

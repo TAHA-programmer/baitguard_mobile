@@ -17,4 +17,16 @@ abstract class AlertRepository {
     required String alertId,
     required String dismissedByUserId,
   });
+
+  /// Reactive streams for live alert updates
+  Stream<List<Alert>> watchAlerts({required String siteId}) =>
+      Stream.fromFuture(getAlerts(siteId: siteId));
+
+  Stream<Alert?> watchAlertById(String id) => Stream.fromFuture(
+    getAlertById(id).then<Alert?>((a) => a).catchError((_) => null),
+  );
+
+  /// Indicates whether the repository supports client-side alert mutations
+  /// (e.g. resolve, snooze, dismiss).
+  bool get supportsMutations => false;
 }

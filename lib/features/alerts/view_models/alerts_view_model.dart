@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../app/state/app_session_controller.dart';
@@ -69,8 +70,15 @@ class AlertsViewModel extends ChangeNotifier {
 
   String? _lastLoadedSiteId;
 
+  StreamSubscription<List<Alert>>? _alertsSub;
+  StreamSubscription<List<Station>>? _stationsSub;
+
   @override
   void dispose() {
+    _alertsSub?.cancel();
+    _stationsSub?.cancel();
+    _alertsSub = null;
+    _stationsSub = null;
     _activeFacilityController.removeListener(_onFacilityChanged);
     super.dispose();
   }
@@ -78,6 +86,10 @@ class AlertsViewModel extends ChangeNotifier {
   void _onFacilityChanged() {
     final currentSite = _activeFacilityController.selectedSiteId;
     if (currentSite != null && currentSite != _lastLoadedSiteId) {
+      _alertsSub?.cancel();
+      _stationsSub?.cancel();
+      _alertsSub = null;
+      _stationsSub = null;
       _loadData();
     }
   }
@@ -85,7 +97,10 @@ class AlertsViewModel extends ChangeNotifier {
   Future<void> _initialize() async {
     final role = _sessionController.currentUser?.role;
     if (role != null) {
-      _permissions = AlertPermissions.fromRole(role);
+      _permissions = AlertPermissions.fromRole(
+        role,
+        supportsMutations: _alertRepository.supportsMutations,
+      );
     }
     await _loadData();
   }
@@ -111,9 +126,26 @@ class AlertsViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      _alertsSub?.cancel();
+      _stationsSub?.cancel();
+
       _allStations = await _stationRepository.getStations(siteId: siteId);
       _allAlerts = await _alertRepository.getAlerts(siteId: siteId);
       _lastLoadedSiteId = siteId;
+
+      _alertsSub = _alertRepository.watchAlerts(siteId: siteId).listen((
+        alerts,
+      ) {
+        _allAlerts = alerts;
+        notifyListeners();
+      });
+
+      _stationsSub = _stationRepository.watchStations(siteId: siteId).listen((
+        stations,
+      ) {
+        _allStations = stations;
+        notifyListeners();
+      });
     } catch (e) {
       _error = 'Failed to load alerts: $e';
     } finally {
@@ -395,14 +427,18 @@ class AlertsViewModel extends ChangeNotifier {
   void _updateLocalAlert(Alert updated) {
     final idx = _allAlerts.indexWhere((a) => a.id == updated.id);
     if (idx != -1) {
-      _allAlerts[idx] = updated;
+      final list = _allAlerts.toList();
+      list[idx] = updated;
+      _allAlerts = list;
     }
   }
 
   void applyUpdatedAlert(Alert updatedAlert) {
     final idx = _allAlerts.indexWhere((a) => a.id == updatedAlert.id);
     if (idx != -1) {
-      _allAlerts[idx] = updatedAlert;
+      final list = _allAlerts.toList();
+      list[idx] = updatedAlert;
+      _allAlerts = list;
       notifyListeners();
     }
   }

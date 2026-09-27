@@ -45,12 +45,25 @@ class AppProviders {
     final hasFirebase = Firebase.apps.isNotEmpty;
 
     return [
+      ChangeNotifierProvider<AppSessionController>(
+        create: (_) => AppSessionController(),
+      ),
       Provider<MockBaitGuardDataSource>(
         create: (_) => MockBaitGuardDataSource.seeded(),
       ),
       if (hasFirebase)
         Provider<RealtimeStationDataSource>(
-          create: (_) => RealtimeStationDataSource(),
+          create: (ctx) {
+            final ds = RealtimeStationDataSource();
+            final session = ctx.read<AppSessionController>();
+            session.addListener(() {
+              final user = session.currentUser;
+              if (user == null || !user.isActive) {
+                ds.bindSessionAndFacility(user: null, facilityId: null);
+              }
+            });
+            return ds;
+          },
           dispose: (_, ds) => ds.dispose(),
         ),
       Provider<AuthRepository>(
@@ -83,7 +96,8 @@ class AppProviders {
       ),
       Provider<AdminInvitationRepository>(
         create: (context) =>
-            context.read<AccessRequestRepository>() as AdminInvitationRepository,
+            context.read<AccessRequestRepository>()
+                as AdminInvitationRepository,
       ),
       Provider<AccountActivationRepository>(
         create: (context) => hasFirebase
@@ -104,9 +118,7 @@ class AppProviders {
       ),
       Provider<AlertRepository>(
         create: (context) => hasFirebase
-            ? RealtimeAlertRepository(
-                context.read<RealtimeStationDataSource>(),
-              )
+            ? RealtimeAlertRepository(context.read<RealtimeStationDataSource>())
             : MockAlertRepository(context.read<MockBaitGuardDataSource>()),
       ),
       Provider<MockUserRepository>(
@@ -124,17 +136,13 @@ class AppProviders {
         create: (context) => hasFirebase
             ? RealtimeDashboardRepository(
                 context.read<RealtimeStationDataSource>(),
+                userRepository: context.read<UserRepository>(),
               )
-            : MockDashboardRepository(
-                context.read<MockBaitGuardDataSource>(),
-              ),
+            : MockDashboardRepository(context.read<MockBaitGuardDataSource>()),
       ),
       Provider<SettingsRepository>(
         create: (context) =>
             MockSettingsRepository(context.read<MockBaitGuardDataSource>()),
-      ),
-      ChangeNotifierProvider<AppSessionController>(
-        create: (_) => AppSessionController(),
       ),
       ChangeNotifierProvider<AuthSessionCoordinator>(
         lazy: false,

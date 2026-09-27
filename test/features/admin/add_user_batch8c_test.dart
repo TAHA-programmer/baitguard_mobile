@@ -130,58 +130,64 @@ void main() {
     expect(written?.keys, isNot(contains('uid')));
   });
 
-  test('rejected history does not block while pending and approved do', () async {
-    final repository = FirestoreAccessRequestRepository.withDependencies(
-      writeDocument: (_) async {},
-      readPendingDocuments: () async => const [],
-      readInvitationConflicts: (_) async => const [
-        AccessRequestDocumentData(
-          id: 'rejected',
-          data: {'status': 'rejected', 'activatedUid': null},
+  test(
+    'rejected history does not block while pending and approved do',
+    () async {
+      final repository = FirestoreAccessRequestRepository.withDependencies(
+        writeDocument: (_) async {},
+        readPendingDocuments: () async => const [],
+        readInvitationConflicts: (_) async => const [
+          AccessRequestDocumentData(
+            id: 'rejected',
+            data: {'status': 'rejected', 'activatedUid': null},
+          ),
+        ],
+      );
+      expect(
+        await repository.findInvitationConflict('USER@EXAMPLE.COM'),
+        AdminInvitationConflict.none,
+      );
+    },
+  );
+
+  test(
+    'activation accepts request and admin sources but rejects arbitrary source',
+    () {
+      Map<String, dynamic> data(String source) => {
+        'fullName': 'Invited User',
+        'normalizedEmail': 'invited@example.com',
+        'company': 'Trinode',
+        'department': '',
+        'phone': '+923001234567',
+        'status': 'approved',
+        'assignedRole': 'technician',
+        'assignedFacilityIds': ['site_1'],
+        'approvalSource': source,
+      };
+
+      expect(
+        FirestoreAccountActivationRepository.mapInvitation(
+          'request-1',
+          data('request'),
+        ).assignedRole,
+        UserRole.technician,
+      );
+      expect(
+        FirestoreAccountActivationRepository.mapInvitation(
+          'request-2',
+          data('admin'),
+        ).assignedRole,
+        UserRole.technician,
+      );
+      expect(
+        () => FirestoreAccountActivationRepository.mapInvitation(
+          'request-3',
+          data('other'),
         ),
-      ],
-    );
-    expect(
-      await repository.findInvitationConflict('USER@EXAMPLE.COM'),
-      AdminInvitationConflict.none,
-    );
-  });
-
-  test('activation accepts request and admin sources but rejects arbitrary source', () {
-    Map<String, dynamic> data(String source) => {
-      'fullName': 'Invited User',
-      'normalizedEmail': 'invited@example.com',
-      'company': 'Trinode',
-      'department': '',
-      'phone': '+923001234567',
-      'status': 'approved',
-      'assignedRole': 'technician',
-      'assignedFacilityIds': ['site_1'],
-      'approvalSource': source,
-    };
-
-    expect(
-      FirestoreAccountActivationRepository.mapInvitation(
-        'request-1',
-        data('request'),
-      ).assignedRole,
-      UserRole.technician,
-    );
-    expect(
-      FirestoreAccountActivationRepository.mapInvitation(
-        'request-2',
-        data('admin'),
-      ).assignedRole,
-      UserRole.technician,
-    );
-    expect(
-      () => FirestoreAccountActivationRepository.mapInvitation(
-        'request-3',
-        data('other'),
-      ),
-      throwsA(isA<AccountActivationFailure>()),
-    );
-  });
+        throwsA(isA<AccountActivationFailure>()),
+      );
+    },
+  );
 
   testWidgets('Add User screen renders form and validation safely', (
     tester,
@@ -227,10 +233,9 @@ AddUserViewModel _viewModel({
   settingsRepository: _SettingsFake(),
   sessionController:
       session ??
-      (AppSessionController()
-        ..establishSession(
-          _user('admin-uid', 'Admin User', sessionRole, 'admin@example.com'),
-        )),
+      (AppSessionController()..establishSession(
+        _user('admin-uid', 'Admin User', sessionRole, 'admin@example.com'),
+      )),
 );
 
 AppSessionController _adminSession() => AppSessionController()

@@ -44,7 +44,6 @@ class PendingFeatureTab extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                // TODO: Replace with fully implemented screen
               ],
             ),
           ),

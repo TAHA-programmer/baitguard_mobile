@@ -17,19 +17,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  test('Firestore mapping supports missing displayName and optional fields', () {
-    final user = FirestoreUserRepository.mapProfile('uid-1', {
-      'uid': 'uid-1',
-      'email': 'onepart@example.com',
-      'role': 'viewer',
-      'status': 'active',
-      'facilityIds': <String>[],
-      'firstName': 'OnePart',
-    });
-    expect(user.name, 'OnePart');
-    expect(user.jobTitle, isNull);
-    expect(user.department, isNull);
-  });
+  test(
+    'Firestore mapping supports missing displayName and optional fields',
+    () {
+      final user = FirestoreUserRepository.mapProfile('uid-1', {
+        'uid': 'uid-1',
+        'email': 'onepart@example.com',
+        'role': 'viewer',
+        'status': 'active',
+        'facilityIds': <String>[],
+        'firstName': 'OnePart',
+      });
+      expect(user.name, 'OnePart');
+      expect(user.jobTitle, isNull);
+      expect(user.department, isNull);
+    },
+  );
 
   test('active admin loads, sorts, and calculates real user counts', () async {
     final users = _UserRepositoryFake([
@@ -94,9 +97,7 @@ void main() {
     );
 
     final unavailable = _UserRepositoryFake(const [])
-      ..failure = const UserProfileFailure(
-        UserProfileFailureType.unavailable,
-      );
+      ..failure = const UserProfileFailure(UserProfileFailureType.unavailable);
     final failed = _viewModel(users: unavailable);
     await failed.load();
     expect(
@@ -105,31 +106,35 @@ void main() {
     );
   });
 
-  test('duplicate load is prevented and refresh preserves previous users', () async {
-    final repository = _UserRepositoryFake([_user('1', 'User', UserRole.viewer)])
-      ..completer = Completer<List<AppUser>>();
-    final viewModel = _viewModel(users: repository);
-    final first = viewModel.load();
-    final second = viewModel.load();
-    await Future<void>.delayed(Duration.zero);
-    expect(repository.calls, 1);
-    repository.completer!.complete(repository.users);
-    await Future.wait([first, second]);
-    expect(viewModel.totalUsers, 1);
+  test(
+    'duplicate load is prevented and refresh preserves previous users',
+    () async {
+      final repository = _UserRepositoryFake([
+        _user('1', 'User', UserRole.viewer),
+      ])..completer = Completer<List<AppUser>>();
+      final viewModel = _viewModel(users: repository);
+      final first = viewModel.load();
+      final second = viewModel.load();
+      await Future<void>.delayed(Duration.zero);
+      expect(repository.calls, 1);
+      repository.completer!.complete(repository.users);
+      await Future.wait([first, second]);
+      expect(viewModel.totalUsers, 1);
 
-    repository.completer = null;
-    repository.failure = const UserProfileFailure(
-      UserProfileFailureType.unavailable,
-    );
-    await viewModel.refresh();
-    expect(viewModel.totalUsers, 1);
-    expect(viewModel.status, SystemManagementStatus.success);
-    expect(viewModel.refreshErrorEventId, 1);
-    expect(
-      viewModel.refreshErrorMessage,
-      'Users could not be loaded. Pull to refresh or try again.',
-    );
-  });
+      repository.completer = null;
+      repository.failure = const UserProfileFailure(
+        UserProfileFailureType.unavailable,
+      );
+      await viewModel.refresh();
+      expect(viewModel.totalUsers, 1);
+      expect(viewModel.status, SystemManagementStatus.success);
+      expect(viewModel.refreshErrorEventId, 1);
+      expect(
+        viewModel.refreshErrorMessage,
+        'Users could not be loaded. Pull to refresh or try again.',
+      );
+    },
+  );
 
   test('initials support one-part and email fallback names', () {
     expect(

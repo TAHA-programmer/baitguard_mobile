@@ -63,4 +63,31 @@ class MockStationRepository implements StationRepository {
     await Future.delayed(const Duration(milliseconds: 600));
     return _dataSource.registerStation(request);
   }
+
+  @override
+  bool get supportsMutations => true;
+
+  @override
+  Stream<List<Station>> watchStations({String? siteId}) async* {
+    var stations = _dataSource.stations;
+    if (siteId != null) {
+      stations = stations.where((s) => s.siteId == siteId).toList();
+    }
+    yield List.unmodifiable(stations);
+  }
+
+  @override
+  Stream<Station?> watchStationById(String id) async* {
+    final stations = _dataSource.stations;
+    try {
+      yield stations.firstWhere((s) => s.id == id);
+    } catch (_) {
+      yield null;
+    }
+  }
+
+  @override
+  Stream<List<DetectionEvent>> watchStationEvents(String stationId) async* {
+    yield List.unmodifiable(_dataSource.getEventsForStation(stationId));
+  }
 }

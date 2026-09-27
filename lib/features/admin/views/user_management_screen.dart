@@ -158,11 +158,7 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Semantics(
-            label: 'Back',
-            button: true,
-            child: const AppBackButton(),
-          ),
+          Semantics(label: 'Back', button: true, child: const AppBackButton()),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(

@@ -25,7 +25,9 @@ class MockAccessRequestRepository
     final matching = _dataSource.accessRequests.where(
       (record) => record.request.normalizedEmail == normalized,
     );
-    if (matching.any((record) => record.status == AccessRequestStatus.pending)) {
+    if (matching.any(
+      (record) => record.status == AccessRequestStatus.pending,
+    )) {
       return AdminInvitationConflict.pendingRequest;
     }
     if (matching.any(

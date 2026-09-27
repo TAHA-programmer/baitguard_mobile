@@ -168,7 +168,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     Color textColor;
     String text;
 
-    if (station.isTampered) {
+    if (station.hasTamperData && station.isTampered) {
       bgColor = AppColors.redTint;
       textColor = AppColors.criticalRed;
       text = 'Tampered';
@@ -415,6 +415,18 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                 Icons.place_outlined,
                 'Zone',
                 station.locationDescription,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              _buildEnvStat(
+                Icons.security_outlined,
+                'Tamper Sensor',
+                station.hasTamperData
+                    ? (station.isTampered ? 'Tampered' : 'Normal')
+                    : 'Unavailable',
               ),
             ],
           ),

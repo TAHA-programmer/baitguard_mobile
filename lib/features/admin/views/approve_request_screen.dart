@@ -258,10 +258,7 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _RoleTile extends StatelessWidget {
-  const _RoleTile({
-    required this.label,
-    required this.role,
-  });
+  const _RoleTile({required this.label, required this.role});
 
   final String label;
   final UserRole role;

@@ -355,7 +355,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 Expanded(
                                   child: KpiCard(
                                     label: 'System uptime',
-                                    value: data.summary.systemUptimePercent != null
+                                    value:
+                                        data.summary.systemUptimePercent != null
                                         ? '${data.summary.systemUptimePercent!.toStringAsFixed(1)}%'
                                         : '—',
                                     changePercent:
@@ -368,7 +369,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 Expanded(
                                   child: KpiCard(
                                     label: 'AI confidence',
-                                    value: data.summary.averageAiConfidencePercent != null
+                                    value:
+                                        data
+                                                .summary
+                                                .averageAiConfidencePercent !=
+                                            null
                                         ? '${data.summary.averageAiConfidencePercent!.toStringAsFixed(0)}%'
                                         : '—',
                                     changePercent:

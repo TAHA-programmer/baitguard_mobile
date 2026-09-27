@@ -112,10 +112,9 @@ void main() {
       await denied.load();
       expect(denied.errorMessage, 'You do not have permission to view users.');
 
-      final network = _UsersFake(const [])
-        ..failure = const UserProfileFailure(
-          UserProfileFailureType.unavailable,
-        );
+      final network = _UsersFake(
+        const [],
+      )..failure = const UserProfileFailure(UserProfileFailureType.unavailable);
       final failed = _listViewModel(network);
       await failed.load();
       expect(
@@ -124,27 +123,30 @@ void main() {
       );
     });
 
-    test('duplicate load prevented and failed refresh preserves data/filters', () async {
-      final repository = _UsersFake([_user('1', 'One', UserRole.viewer)])
-        ..completer = Completer<List<AppUser>>();
-      final viewModel = _listViewModel(repository);
-      final first = viewModel.load();
-      final duplicate = viewModel.load();
-      await Future<void>.delayed(Duration.zero);
-      expect(repository.getUsersCalls, 1);
-      repository.completer!.complete(repository.users);
-      await Future.wait([first, duplicate]);
+    test(
+      'duplicate load prevented and failed refresh preserves data/filters',
+      () async {
+        final repository = _UsersFake([_user('1', 'One', UserRole.viewer)])
+          ..completer = Completer<List<AppUser>>();
+        final viewModel = _listViewModel(repository);
+        final first = viewModel.load();
+        final duplicate = viewModel.load();
+        await Future<void>.delayed(Duration.zero);
+        expect(repository.getUsersCalls, 1);
+        repository.completer!.complete(repository.users);
+        await Future.wait([first, duplicate]);
 
-      viewModel.selectRole(UserRoleFilter.viewer);
-      repository.completer = null;
-      repository.failure = const UserProfileFailure(
-        UserProfileFailureType.unavailable,
-      );
-      await viewModel.refresh();
-      expect(viewModel.users, hasLength(1));
-      expect(viewModel.roleFilter, UserRoleFilter.viewer);
-      expect(viewModel.refreshErrorEventId, 1);
-    });
+        viewModel.selectRole(UserRoleFilter.viewer);
+        repository.completer = null;
+        repository.failure = const UserProfileFailure(
+          UserProfileFailureType.unavailable,
+        );
+        await viewModel.refresh();
+        expect(viewModel.users, hasLength(1));
+        expect(viewModel.roleFilter, UserRoleFilter.viewer);
+        expect(viewModel.refreshErrorEventId, 1);
+      },
+    );
 
     test('name and initials fall back safely', () {
       final user = _user(
@@ -178,10 +180,10 @@ void main() {
       await viewModel.load();
       expect(repository.requestedIds, ['target']);
       expect(viewModel.status, UserDetailsStatus.success);
-      expect(
-        viewModel.facilities.map((facility) => facility.name),
-        ['Warehouse A', 'Unknown facility'],
-      );
+      expect(viewModel.facilities.map((facility) => facility.name), [
+        'Warehouse A',
+        'Unknown facility',
+      ]);
     });
 
     test('unauthorized session never reads user', () async {
@@ -327,8 +329,9 @@ UserDetailsViewModel _detailsViewModel(
 }
 
 AppSessionController _session(UserRole role, bool active) =>
-    AppSessionController()
-      ..establishSession(_user('current', 'Current Admin', role, active: active));
+    AppSessionController()..establishSession(
+      _user('current', 'Current Admin', role, active: active),
+    );
 
 AppUser _user(
   String id,
@@ -385,8 +388,7 @@ class _UsersFake implements UserRepository {
     required String department,
     required String phone,
     required String bio,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 
   @override
   Future<AppUser> updateManagedUserAccess(dynamic request) =>
@@ -423,8 +425,7 @@ class _SettingsFake implements SettingsRepository {
     required String userId,
     required String currentPassword,
     required String newPassword,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
   @override
   Future<AdministratorContact> getAdministratorContact(String userId) =>
       throw UnimplementedError();
@@ -433,6 +434,5 @@ class _SettingsFake implements SettingsRepository {
     required String userId,
     required String administratorId,
     required String message,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 }

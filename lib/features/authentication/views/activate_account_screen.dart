@@ -75,7 +75,9 @@ class _ActivateAccountScreenState extends State<ActivateAccountScreen> {
   Future<void> _back() async {
     await context.read<ActivateAccountViewModel>().abandon();
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
   }
 
   @override
@@ -89,43 +91,45 @@ class _ActivateAccountScreenState extends State<ActivateAccountScreen> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.pageHorizontal,
-                vertical: AppSpacing.md,
-              ),
-              child: Row(
-                children: [
-                  AppBackButton(onPressed: _back),
-                  const SizedBox(width: AppSpacing.md),
-                  Text(
-                    'Activate Account',
-                    style: AppTypography.manropeExtraBold.copyWith(fontSize: 20),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.pageHorizontal),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadii.xl),
-                    border: Border.all(color: AppColors.divider),
-                  ),
-                  child: viewModel.stage == ActivateAccountStage.form
-                      ? _buildForm(viewModel)
-                      : _buildVerification(viewModel),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.pageHorizontal,
+                  vertical: AppSpacing.md,
+                ),
+                child: Row(
+                  children: [
+                    AppBackButton(onPressed: _back),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      'Activate Account',
+                      style: AppTypography.manropeExtraBold.copyWith(
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.pageHorizontal),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadii.xl),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: viewModel.stage == ActivateAccountStage.form
+                        ? _buildForm(viewModel)
+                        : _buildVerification(viewModel),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

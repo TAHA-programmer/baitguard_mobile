@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../domain/models/report_models.dart';
@@ -18,7 +19,10 @@ class ReportsViewModel extends ChangeNotifier {
     required this.currentUserId,
   }) : _repository = repository,
        _activeFacilityController = activeFacilityController,
-       permissions = ReportsPermissions.fromRole(userRole) {
+       permissions = ReportsPermissions.fromRole(
+         userRole,
+         supportsExport: repository.supportsExport,
+       ) {
     _activeFacilityController.addListener(_onFacilityChanged);
     _loadData();
   }
@@ -56,9 +60,12 @@ class ReportsViewModel extends ChangeNotifier {
   String? refreshErrorMessage;
 
   ReportExport? generatedExport;
+  StreamSubscription<ReportsDashboardData>? _reportsSub;
 
   @override
   void dispose() {
+    _reportsSub?.cancel();
+    _reportsSub = null;
     _activeFacilityController.removeListener(_onFacilityChanged);
     super.dispose();
   }
@@ -79,16 +86,19 @@ class ReportsViewModel extends ChangeNotifier {
 
     _setLoading(true);
 
-    try {
-      _dashboardData = await _repository.getDashboardData(
-        siteId: siteId,
-        period: _selectedPeriod,
-      );
-    } catch (e) {
-      _triggerRefreshError('Reports could not be refreshed.');
-    } finally {
-      _setLoading(false);
-    }
+    _reportsSub?.cancel();
+    _reportsSub = _repository
+        .watchDashboardData(siteId: siteId, period: _selectedPeriod)
+        .listen(
+          (data) {
+            _dashboardData = data;
+            _setLoading(false);
+          },
+          onError: (e) {
+            _triggerRefreshError('Reports could not be refreshed.');
+            _setLoading(false);
+          },
+        );
   }
 
   Future<void> refresh() async {
@@ -127,6 +137,10 @@ class ReportsViewModel extends ChangeNotifier {
 
   Future<void> generateReport(ReportTemplateType templateType) async {
     if (_isGenerating) return;
+    if (!_repository.supportsExport) {
+      _triggerActionError('Report export is unavailable in this pilot.');
+      return;
+    }
     if (!permissions.canGenerateTemplate(templateType)) {
       _triggerActionError('Permission denied to generate this report.');
       return;
@@ -179,8 +193,8 @@ class ReportsViewModel extends ChangeNotifier {
   }
 
   void handleMockDownload() {
-    if (!permissions.canDownloadMock) {
-      _triggerActionError('Permission denied.');
+    if (!_repository.supportsExport || !permissions.canDownloadMock) {
+      _triggerActionError('Report download is unavailable in this pilot.');
       return;
     }
     _triggerActionError(
@@ -189,8 +203,8 @@ class ReportsViewModel extends ChangeNotifier {
   }
 
   void handleMockShare() {
-    if (!permissions.canShareMock) {
-      _triggerActionError('Permission denied.');
+    if (!_repository.supportsExport || !permissions.canShareMock) {
+      _triggerActionError('Report sharing is unavailable in this pilot.');
       return;
     }
     _triggerActionError(

@@ -58,43 +58,49 @@ void main() {
       expect(station.isOnline, isTrue);
     });
 
-    test('parseStationLive marks station as offline when online flag is false', () {
-      final nowMillis = DateTime.now().millisecondsSinceEpoch;
-      final payload = {
-        'device_id': 'station_01',
-        'facility_id': 'site_1',
-        'battery_percentage': 50,
-        'bait_percentage': 80,
-        'online': false,
-        'last_seen_at': nowMillis,
-      };
+    test(
+      'parseStationLive marks station as offline when online flag is false',
+      () {
+        final nowMillis = DateTime.now().millisecondsSinceEpoch;
+        final payload = {
+          'device_id': 'station_01',
+          'facility_id': 'site_1',
+          'battery_percentage': 50,
+          'bait_percentage': 80,
+          'online': false,
+          'last_seen_at': nowMillis,
+        };
 
-      final station = RealtimeStationDataSource.parseStationLive(payload);
+        final station = RealtimeStationDataSource.parseStationLive(payload);
 
-      expect(station, isNotNull);
-      expect(station!.status, StationStatus.offline);
-      expect(station.isOnline, isFalse);
-    });
+        expect(station, isNotNull);
+        expect(station!.status, StationStatus.offline);
+        expect(station.isOnline, isFalse);
+      },
+    );
 
-    test('parseStationLive marks station as offline when last_seen_at is stale (>30m)', () {
-      final staleMillis = DateTime.now()
-          .subtract(const Duration(minutes: 45))
-          .millisecondsSinceEpoch;
-      final payload = {
-        'device_id': 'station_01',
-        'facility_id': 'site_1',
-        'battery_percentage': 90,
-        'bait_percentage': 90,
-        'online': true,
-        'last_seen_at': staleMillis,
-      };
+    test(
+      'parseStationLive marks station as offline when last_seen_at is stale (>30m)',
+      () {
+        final staleMillis = DateTime.now()
+            .subtract(const Duration(minutes: 45))
+            .millisecondsSinceEpoch;
+        final payload = {
+          'device_id': 'station_01',
+          'facility_id': 'site_1',
+          'battery_percentage': 90,
+          'bait_percentage': 90,
+          'online': true,
+          'last_seen_at': staleMillis,
+        };
 
-      final station = RealtimeStationDataSource.parseStationLive(payload);
+        final station = RealtimeStationDataSource.parseStationLive(payload);
 
-      expect(station, isNotNull);
-      expect(station!.status, StationStatus.offline);
-      expect(station.isOnline, isFalse);
-    });
+        expect(station, isNotNull);
+        expect(station!.status, StationStatus.offline);
+        expect(station.isOnline, isFalse);
+      },
+    );
 
     test('parseStationLive returns null for null or non-map payloads', () {
       expect(RealtimeStationDataSource.parseStationLive(null), isNull);
@@ -102,51 +108,63 @@ void main() {
       expect(RealtimeStationDataSource.parseStationLive([]), isNull);
     });
 
-    test('parseStationEventsMap parses rat_detected and low_bait_alert correctly', () {
-      final nowMillis = DateTime.now().millisecondsSinceEpoch;
-      final olderMillis = nowMillis - 10000;
+    test(
+      'parseStationEventsMap parses rat_detected and low_bait_alert correctly',
+      () {
+        final nowMillis = DateTime.now().millisecondsSinceEpoch;
+        final olderMillis = nowMillis - 10000;
 
-      final eventsPayload = {
-        'evt_001': {
-          'device_id': 'station_01',
-          'event_type': 'rat_detected',
-          'timestamp': olderMillis,
-        },
-        'evt_002': {
-          'device_id': 'station_01',
-          'event_type': 'low_bait_alert',
-          'bait_percentage': 15,
-          'status': 'Refill Required',
-          'timestamp': nowMillis,
-        },
-      };
+        final eventsPayload = {
+          'evt_001': {
+            'device_id': 'station_01',
+            'facility_id': 'site_1',
+            'event_type': 'rat_detected',
+            'timestamp': olderMillis,
+          },
+          'evt_002': {
+            'device_id': 'station_01',
+            'facility_id': 'site_1',
+            'event_type': 'low_bait_alert',
+            'bait_percentage': 15,
+            'current_pixels': 450,
+            'status': 'Refill Required',
+            'timestamp': nowMillis,
+          },
+        };
 
-      final parsed = RealtimeStationDataSource.parseStationEventsMap(eventsPayload);
+        final parsed = RealtimeStationDataSource.parseStationEventsMap(
+          eventsPayload,
+        );
 
-      // Newest event first
-      expect(parsed.alerts.length, 2);
-      expect(parsed.events.length, 1);
+        // Newest event first
+        expect(parsed.alerts.length, 2);
+        expect(parsed.events.length, 1);
 
-      // evt_002 is newest, so alerts[0] is the low_bait_alert
-      final lowBaitAlert = parsed.alerts.firstWhere((a) => a.id == 'alert_evt_002');
-      expect(lowBaitAlert.type, AlertType.lowBait);
-      expect(lowBaitAlert.severity, AlertSeverity.warning);
-      expect(lowBaitAlert.status, AlertStatus.open);
-      expect(lowBaitAlert.description, contains('15%'));
+        // evt_002 is newest, so alerts[0] is the low_bait_alert
+        final lowBaitAlert = parsed.alerts.firstWhere(
+          (a) => a.id == 'alert_evt_002',
+        );
+        expect(lowBaitAlert.type, AlertType.lowBait);
+        expect(lowBaitAlert.severity, AlertSeverity.warning);
+        expect(lowBaitAlert.status, AlertStatus.open);
+        expect(lowBaitAlert.description, contains('15%'));
 
-      // evt_001 rat detection
-      final ratAlert = parsed.alerts.firstWhere((a) => a.id == 'alert_evt_001');
-      expect(ratAlert.type, AlertType.rodent);
-      expect(ratAlert.severity, AlertSeverity.critical);
-      expect(ratAlert.detectionEventId, 'evt_001');
+        // evt_001 rat detection
+        final ratAlert = parsed.alerts.firstWhere(
+          (a) => a.id == 'alert_evt_001',
+        );
+        expect(ratAlert.type, AlertType.rodent);
+        expect(ratAlert.severity, AlertSeverity.critical);
+        expect(ratAlert.detectionEventId, 'evt_001');
 
-      final detection = parsed.events.first;
-      expect(detection.id, 'evt_001');
-      expect(detection.stationId, 'station_01');
-      expect(detection.species, DetectedSpecies.rat);
-      expect(detection.status, DetectionEventStatus.open);
-      expect(detection.alertId, 'alert_evt_001');
-    });
+        final detection = parsed.events.first;
+        expect(detection.id, 'evt_001');
+        expect(detection.stationId, 'station_01');
+        expect(detection.species, DetectedSpecies.rat);
+        expect(detection.status, DetectionEventStatus.open);
+        expect(detection.alertId, 'alert_evt_001');
+      },
+    );
   });
 
   group('Realtime Repositories Integration', () {
@@ -185,13 +203,16 @@ void main() {
       dataSource.updateFromEventsPayload({
         'evt_101': {
           'device_id': 'station_01',
+          'facility_id': 'site_1',
           'event_type': 'rat_detected',
           'timestamp': nowMillis,
         },
         'evt_102': {
           'device_id': 'station_01',
+          'facility_id': 'site_1',
           'event_type': 'low_bait_alert',
           'bait_percentage': 20,
+          'current_pixels': 500,
           'status': 'Refill Required',
           'timestamp': nowMillis - 5000,
         },
@@ -202,33 +223,36 @@ void main() {
       dataSource.dispose();
     });
 
-    test('RealtimeStationRepository enforces facility isolation and queries', () async {
-      // Querying pilot facility site_1 returns station_01
-      final stationsSite1 = await stationRepo.getStations(siteId: 'site_1');
-      expect(stationsSite1.length, 1);
-      expect(stationsSite1.first.id, 'station_01');
-      expect(stationsSite1.first.siteId, 'site_1');
+    test(
+      'RealtimeStationRepository enforces facility isolation and queries',
+      () async {
+        // Querying pilot facility site_1 returns station_01
+        final stationsSite1 = await stationRepo.getStations(siteId: 'site_1');
+        expect(stationsSite1.length, 1);
+        expect(stationsSite1.first.id, 'station_01');
+        expect(stationsSite1.first.siteId, 'site_1');
 
-      // Querying another facility returns empty list
-      final stationsSite2 = await stationRepo.getStations(siteId: 'site_2');
-      expect(stationsSite2, isEmpty);
+        // Querying another facility returns empty list
+        final stationsSite2 = await stationRepo.getStations(siteId: 'site_2');
+        expect(stationsSite2, isEmpty);
 
-      // getStationById
-      final found = await stationRepo.getStationById('station_01');
-      expect(found, isNotNull);
-      expect(found!.id, 'station_01');
+        // getStationById
+        final found = await stationRepo.getStationById('station_01');
+        expect(found, isNotNull);
+        expect(found!.id, 'station_01');
 
-      final notFound = await stationRepo.getStationById('station_99');
-      expect(notFound, isNull);
+        final notFound = await stationRepo.getStationById('station_99');
+        expect(notFound, isNull);
 
-      // getStationEvents
-      final events = await stationRepo.getStationEvents('station_01');
-      expect(events.length, 1);
-      expect(events.first.id, 'evt_101');
+        // getStationEvents
+        final events = await stationRepo.getStationEvents('station_01');
+        expect(events.length, 1);
+        expect(events.first.id, 'evt_101');
 
-      final noEvents = await stationRepo.getStationEvents('station_99');
-      expect(noEvents, isEmpty);
-    });
+        final noEvents = await stationRepo.getStationEvents('station_99');
+        expect(noEvents, isEmpty);
+      },
+    );
 
     test('RealtimeStationRepository blocks mutations safely', () async {
       expect(
@@ -257,93 +281,104 @@ void main() {
       );
     });
 
-    test('RealtimeAlertRepository enforces facility isolation and queries', () async {
-      // site_1 returns alerts
-      final alertsSite1 = await alertRepo.getAlerts(siteId: 'site_1');
-      expect(alertsSite1.length, 2);
+    test(
+      'RealtimeAlertRepository enforces facility isolation and queries',
+      () async {
+        // site_1 returns alerts
+        final alertsSite1 = await alertRepo.getAlerts(siteId: 'site_1');
+        expect(alertsSite1.length, 2);
 
-      // site_2 returns empty list
-      final alertsSite2 = await alertRepo.getAlerts(siteId: 'site_2');
-      expect(alertsSite2, isEmpty);
+        // site_2 returns empty list
+        final alertsSite2 = await alertRepo.getAlerts(siteId: 'site_2');
+        expect(alertsSite2, isEmpty);
 
-      // getAlertById
-      final alert = await alertRepo.getAlertById('alert_evt_101');
-      expect(alert.id, 'alert_evt_101');
-      expect(alert.stationId, 'station_01');
+        // getAlertById
+        final alert = await alertRepo.getAlertById('alert_evt_101');
+        expect(alert.id, 'alert_evt_101');
+        expect(alert.stationId, 'station_01');
 
-      expect(
-        () => alertRepo.getAlertById('unknown_id'),
-        throwsA(isA<StateError>()),
-      );
+        expect(
+          () => alertRepo.getAlertById('unknown_id'),
+          throwsA(isA<StateError>()),
+        );
 
-      // markAlertRead returns the alert without crashing
-      final readAlert = await alertRepo.markAlertRead(alertId: 'alert_evt_101');
-      expect(readAlert.id, 'alert_evt_101');
-
-      // mutations throw UnsupportedError
-      expect(
-        () => alertRepo.resolveAlert(
+        // markAlertRead returns the alert without crashing
+        final readAlert = await alertRepo.markAlertRead(
           alertId: 'alert_evt_101',
-          resolvedByUserId: 'user_1',
-        ),
-        throwsA(isA<UnsupportedError>()),
-      );
-      expect(
-        () => alertRepo.snoozeAlert(
-          alertId: 'alert_evt_101',
-          until: DateTime.now().add(const Duration(hours: 1)),
-        ),
-        throwsA(isA<UnsupportedError>()),
-      );
-    });
+        );
+        expect(readAlert.id, 'alert_evt_101');
 
-    test('RealtimeDashboardRepository builds correct data for site_1 and empty for other sites', () async {
-      // Querying site_1
-      final data = await dashboardRepo.getUserDashboard(
-        user: testUser,
-        siteId: 'site_1',
-      );
+        // mutations throw UnsupportedError
+        expect(
+          () => alertRepo.resolveAlert(
+            alertId: 'alert_evt_101',
+            resolvedByUserId: 'user_1',
+          ),
+          throwsA(isA<UnsupportedError>()),
+        );
+        expect(
+          () => alertRepo.snoozeAlert(
+            alertId: 'alert_evt_101',
+            until: DateTime.now().add(const Duration(hours: 1)),
+          ),
+          throwsA(isA<UnsupportedError>()),
+        );
+      },
+    );
 
-      expect(data.stationMetrics.totalCount, 1);
-      expect(data.stationMetrics.activeCount, 1);
-      expect(data.stationMetrics.refillNeededCount, 0);
-      expect(data.stationMetrics.offlineCount, 0);
-      expect(data.detectionsToday, greaterThanOrEqualTo(1));
-      expect(data.recentAlerts.length, 2);
-      expect(data.mapMarkers.length, 1);
-      expect(data.mapMarkers.first.stationId, 'station_01');
+    test(
+      'RealtimeDashboardRepository builds correct data for site_1 and empty for other sites',
+      () async {
+        // Querying site_1
+        final data = await dashboardRepo.getUserDashboard(
+          user: testUser,
+          siteId: 'site_1',
+        );
 
-      // Querying site_2 returns empty dashboard data
-      final emptyData = await dashboardRepo.getUserDashboard(
-        user: testUser,
-        siteId: 'site_2',
-      );
-      expect(emptyData.stationMetrics.totalCount, 0);
-      expect(emptyData.recentAlerts, isEmpty);
-      expect(emptyData.mapMarkers, isEmpty);
-    });
+        expect(data.stationMetrics.totalCount, 1);
+        expect(data.stationMetrics.activeCount, 1);
+        expect(data.stationMetrics.refillNeededCount, 0);
+        expect(data.stationMetrics.offlineCount, 0);
+        expect(data.detectionsToday, greaterThanOrEqualTo(1));
+        expect(data.recentAlerts.length, 2);
+        expect(data.mapMarkers.length, 1);
+        expect(data.mapMarkers.first.stationId, 'station_01');
 
-    test('RealtimeReportRepository builds dashboard data for site_1 and empty for other sites', () async {
-      final period = ReportPeriod(
-        type: ReportPeriodType.month,
-        anchorDate: DateTime.now(),
-      );
+        // Querying site_2 returns empty dashboard data
+        final emptyData = await dashboardRepo.getUserDashboard(
+          user: testUser,
+          siteId: 'site_2',
+        );
+        expect(emptyData.stationMetrics.totalCount, 0);
+        expect(emptyData.recentAlerts, isEmpty);
+        expect(emptyData.mapMarkers, isEmpty);
+      },
+    );
 
-      final reportsData = await reportRepo.getDashboardData(
-        siteId: 'site_1',
-        period: period,
-      );
+    test(
+      'RealtimeReportRepository builds dashboard data for site_1 and empty for other sites',
+      () async {
+        final period = ReportPeriod(
+          type: ReportPeriodType.month,
+          anchorDate: DateTime.now(),
+        );
 
-      expect(reportsData.summary.totalDetections, greaterThanOrEqualTo(1));
-      expect(reportsData.stationLedger.length, 1);
-      expect(reportsData.stationLedger.first.stationId, 'station_01');
+        final reportsData = await reportRepo.getDashboardData(
+          siteId: 'site_1',
+          period: period,
+        );
 
-      final emptyReports = await reportRepo.getDashboardData(
-        siteId: 'site_2',
-        period: period,
-      );
-      expect(emptyReports.summary.totalDetections, 0);
-      expect(emptyReports.stationLedger, isEmpty);
-    });
+        expect(reportsData.summary.totalDetections, greaterThanOrEqualTo(1));
+        expect(reportsData.stationLedger.length, 1);
+        expect(reportsData.stationLedger.first.stationId, 'station_01');
+
+        final emptyReports = await reportRepo.getDashboardData(
+          siteId: 'site_2',
+          period: period,
+        );
+        expect(emptyReports.summary.totalDetections, 0);
+        expect(emptyReports.stationLedger, isEmpty);
+      },
+    );
   });
 }

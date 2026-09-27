@@ -8,7 +8,8 @@ class MockAccountActivationRepository implements AccountActivationRepository {
   MockAccountActivationRepository([MockBaitGuardDataSource? dataSource]);
 
   @override
-  Future<ApprovedAccessInvitation> findApprovedInvitationForCurrentUser() async {
+  Future<ApprovedAccessInvitation>
+  findApprovedInvitationForCurrentUser() async {
     await Future.delayed(const Duration(milliseconds: 200));
     throw const AccountActivationFailure(
       AccountActivationFailureType.unauthenticated,

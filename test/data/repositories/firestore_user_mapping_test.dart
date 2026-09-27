@@ -47,9 +47,9 @@ void main() {
     });
     expect(
       payload.entries.where((entry) => entry.key != 'updatedAt'),
-      everyElement(predicate<MapEntry<String, Object?>>(
-        (entry) => entry.value is String,
-      )),
+      everyElement(
+        predicate<MapEntry<String, Object?>>((entry) => entry.value is String),
+      ),
     );
     expect(payload.values, isNot(contains(null)));
     expect(payload.keys, isNot(contains('uid')));

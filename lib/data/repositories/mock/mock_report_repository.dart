@@ -209,4 +209,15 @@ class MockReportRepository implements ReportRepository {
     recent.sort((a, b) => b.generatedAt.compareTo(a.generatedAt));
     return recent;
   }
+
+  @override
+  bool get supportsExport => true;
+
+  @override
+  Stream<ReportsDashboardData> watchDashboardData({
+    required String siteId,
+    required ReportPeriod period,
+  }) async* {
+    yield await getDashboardData(siteId: siteId, period: period);
+  }
 }

@@ -12,25 +12,28 @@ import 'package:baitguard/domain/repositories/auth_repository.dart';
 import 'package:baitguard/features/authentication/view_models/activate_account_view_model.dart';
 
 void main() {
-  test('creates account once, sends verification, and clears passwords', () async {
-    final auth = _AuthFake();
-    final viewModel = ActivateAccountViewModel(
-      authRepository: auth,
-      activationRepository: _ActivationFake(),
-      sessionController: AppSessionController(),
-    );
-    viewModel.setEmail('  USER@Example.com ');
-    viewModel.setPassword('Strong1!');
-    viewModel.setConfirmation('Strong1!');
+  test(
+    'creates account once, sends verification, and clears passwords',
+    () async {
+      final auth = _AuthFake();
+      final viewModel = ActivateAccountViewModel(
+        authRepository: auth,
+        activationRepository: _ActivationFake(),
+        sessionController: AppSessionController(),
+      );
+      viewModel.setEmail('  USER@Example.com ');
+      viewModel.setPassword('Strong1!');
+      viewModel.setConfirmation('Strong1!');
 
-    expect(await viewModel.submit(), isTrue);
-    expect(auth.createCalls, 1);
-    expect(auth.createdEmail, 'user@example.com');
-    expect(auth.verificationCalls, 1);
-    expect(viewModel.password, isEmpty);
-    expect(viewModel.confirmation, isEmpty);
-    expect(viewModel.stage, ActivateAccountStage.verification);
-  });
+      expect(await viewModel.submit(), isTrue);
+      expect(auth.createCalls, 1);
+      expect(auth.createdEmail, 'user@example.com');
+      expect(auth.verificationCalls, 1);
+      expect(viewModel.password, isEmpty);
+      expect(viewModel.confirmation, isEmpty);
+      expect(viewModel.stage, ActivateAccountStage.verification);
+    },
+  );
 
   test('verified identity activates approved role and facilities', () async {
     final auth = _AuthFake()..verified = true;
@@ -65,20 +68,23 @@ void main() {
     expect(order, ['reload', 'token-refresh', 'invitation-lookup']);
   });
 
-  test('unverified identity never refreshes token or queries invitation', () async {
-    final auth = _AuthFake();
-    final activation = _ActivationFake();
-    final viewModel = ActivateAccountViewModel(
-      authRepository: auth,
-      activationRepository: activation,
-      sessionController: AppSessionController(),
-    );
+  test(
+    'unverified identity never refreshes token or queries invitation',
+    () async {
+      final auth = _AuthFake();
+      final activation = _ActivationFake();
+      final viewModel = ActivateAccountViewModel(
+        authRepository: auth,
+        activationRepository: activation,
+        sessionController: AppSessionController(),
+      );
 
-    expect(await viewModel.checkVerification(), isFalse);
-    expect(auth.tokenRefreshCalls, 0);
-    expect(activation.findCalls, 0);
-    expect(viewModel.errorMessage, 'Your email has not been verified yet.');
-  });
+      expect(await viewModel.checkVerification(), isFalse);
+      expect(auth.tokenRefreshCalls, 0);
+      expect(activation.findCalls, 0);
+      expect(viewModel.errorMessage, 'Your email has not been verified yet.');
+    },
+  );
 
   test('token refresh network failure preserves verification state', () async {
     final auth = _AuthFake()
@@ -116,7 +122,10 @@ void main() {
     expect(await viewModel.checkVerification(), isFalse);
     expect(auth.tokenRefreshCalls, 1);
     expect(session.currentUser, isNull);
-    expect(viewModel.errorMessage, 'Account activation could not be authorized.');
+    expect(
+      viewModel.errorMessage,
+      'Account activation could not be authorized.',
+    );
   });
 
   test('validation rejects weak and mismatched passwords', () async {

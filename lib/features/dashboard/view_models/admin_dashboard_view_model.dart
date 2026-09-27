@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../domain/models/app_user.dart';
@@ -38,6 +39,8 @@ class AdminDashboardViewModel extends ChangeNotifier {
   String? get facilityErrorMessage => _facilityErrorMessage;
 
   bool _isLoading = false;
+  bool _disposed = false;
+  StreamSubscription<AdminDashboardData>? _streamSubscription;
 
   AdminDashboardViewModel({
     required this.dashboardRepository,
@@ -65,6 +68,35 @@ class AdminDashboardViewModel extends ChangeNotifier {
     notifyListeners();
 
     await _fetchData(isRefresh: true);
+  }
+
+  void _subscribe(AppUser user, String? siteId) {
+    _streamSubscription?.cancel();
+    _streamSubscription = dashboardRepository
+        .watchAdminDashboard(admin: user, siteId: siteId)
+        .listen(
+          (result) async {
+            result = await _withRealPendingCounts(result);
+            if (_disposed) return;
+            _data = result;
+            _status = DashboardLoadStatus.success;
+            _errorMessage = null;
+            if (result.selectedSite.id !=
+                activeFacilityController.selectedSiteId) {
+              activeFacilityController.selectSite(result.selectedSite.id);
+            }
+            notifyListeners();
+          },
+          onError: (e) {
+            if (_disposed) return;
+            if (_data == null) {
+              _status = DashboardLoadStatus.failure;
+              _errorMessage =
+                  'Could not load dashboard data. Please try again.';
+              notifyListeners();
+            }
+          },
+        );
   }
 
   Future<void> refreshPendingCounts() async {
@@ -145,8 +177,10 @@ class AdminDashboardViewModel extends ChangeNotifier {
       _errorMessage = null;
 
       // Commit selected site to the shared controller AFTER success.
-      // This notifies StationsViewModel (and future Alerts/Reports) to reload.
       activeFacilityController.selectSite(siteId);
+
+      // Switch realtime subscription to new facility
+      _subscribe(user, siteId);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Admin dashboard facility change failed: $e');
@@ -167,6 +201,9 @@ class AdminDashboardViewModel extends ChangeNotifier {
         throw Exception('Invalid session or role');
       }
       if (user.siteAccessIds.isEmpty) {
+        _streamSubscription?.cancel();
+        _streamSubscription = null;
+        _data = null;
         _status = DashboardLoadStatus.failure;
         _errorMessage = 'No facilities are assigned to your account.';
         return;
@@ -181,13 +218,17 @@ class AdminDashboardViewModel extends ChangeNotifier {
       );
       result = await _withRealPendingCounts(result);
 
+      if (_disposed) return;
       _data = result;
       _status = DashboardLoadStatus.success;
       _errorMessage = null;
 
-      // Sync the controller if the repository resolved a different default site.
       if (result.selectedSite.id != activeFacilityController.selectedSiteId) {
         activeFacilityController.selectSite(result.selectedSite.id);
+      }
+
+      if (!isRefresh) {
+        _subscribe(user, siteId);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -204,6 +245,14 @@ class AdminDashboardViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _streamSubscription?.cancel();
+    _streamSubscription = null;
+    super.dispose();
   }
 
   AdminDashboardData _preservePendingCounts(AdminDashboardData result) {

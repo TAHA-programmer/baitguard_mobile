@@ -70,8 +70,8 @@ class StationLedgerCard extends StatelessWidget {
                 final uptimeColor = entry.uptimePercent == null
                     ? AppColors.textTertiary
                     : (isHighUptime
-                        ? AppColors.successGreen
-                        : AppColors.warningAmber);
+                          ? AppColors.successGreen
+                          : AppColors.warningAmber);
 
                 // Parse station code only (strip location from name if embedded)
                 final stationCode = entry.stationCode

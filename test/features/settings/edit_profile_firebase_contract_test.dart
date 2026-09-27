@@ -207,16 +207,17 @@ void main() {
     final original = _legacyUser();
     final repository = _ProfileRepositoryFake(original);
     final session = AppSessionController()..establishSession(original);
-    final viewModel = EditProfileViewModel(
-      userRepository: repository,
-      sessionController: session,
-    )
-      ..firstName = 'OneName'
-      ..lastName = '   '
-      ..jobTitle = ''
-      ..department = ' '
-      ..phoneNumber = ''
-      ..shortBio = '  ';
+    final viewModel =
+        EditProfileViewModel(
+            userRepository: repository,
+            sessionController: session,
+          )
+          ..firstName = 'OneName'
+          ..lastName = '   '
+          ..jobTitle = ''
+          ..department = ' '
+          ..phoneNumber = ''
+          ..shortBio = '  ';
 
     expect(await viewModel.save(), isTrue);
     expect(repository.submitted?['lastName'], '');
@@ -227,38 +228,42 @@ void main() {
     expect(session.currentUser?.name, 'OneName');
   });
 
-  test('genuine permission failure retains a safe authorization message', () async {
-    final original = _legacyUser();
-    final repository = _ProfileRepositoryFake(original)
-      ..failure = const UserProfileFailure(
-        UserProfileFailureType.permissionDenied,
+  test(
+    'genuine permission failure retains a safe authorization message',
+    () async {
+      final original = _legacyUser();
+      final repository = _ProfileRepositoryFake(original)
+        ..failure = const UserProfileFailure(
+          UserProfileFailureType.permissionDenied,
+        );
+      final viewModel = EditProfileViewModel(
+        userRepository: repository,
+        sessionController: AppSessionController()..establishSession(original),
       );
-    final viewModel = EditProfileViewModel(
-      userRepository: repository,
-      sessionController: AppSessionController()..establishSession(original),
-    );
 
-    expect(await viewModel.save(), isFalse);
-    expect(
-      viewModel.errorMessage,
-      'Your profile changes could not be authorized. Please sign in again or contact your administrator.',
-    );
-  });
+      expect(await viewModel.save(), isFalse);
+      expect(
+        viewModel.errorMessage,
+        'Your profile changes could not be authorized. Please sign in again or contact your administrator.',
+      );
+    },
+  );
 
   for (final role in UserRole.values) {
     test('${role.name} saves all optional fields empty', () async {
       final original = _roleUser(role);
       final repository = _ProfileRepositoryFake(original);
       final session = AppSessionController()..establishSession(original);
-      final viewModel = EditProfileViewModel(
-        userRepository: repository,
-        sessionController: session,
-      )
-        ..lastName = ''
-        ..jobTitle = ''
-        ..department = ''
-        ..phoneNumber = ''
-        ..shortBio = '';
+      final viewModel =
+          EditProfileViewModel(
+              userRepository: repository,
+              sessionController: session,
+            )
+            ..lastName = ''
+            ..jobTitle = ''
+            ..department = ''
+            ..phoneNumber = ''
+            ..shortBio = '';
 
       expect(await viewModel.save(), isTrue);
       expect(session.currentUser?.role, role);

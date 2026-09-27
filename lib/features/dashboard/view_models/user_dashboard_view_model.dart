@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../domain/models/dashboard/user_dashboard_data.dart';
@@ -28,6 +29,7 @@ class UserDashboardViewModel extends ChangeNotifier {
 
   bool _isLoading = false;
   bool _disposed = false;
+  StreamSubscription<UserDashboardData>? _streamSubscription;
 
   UserDashboardViewModel({
     required this.dashboardRepository,
@@ -39,6 +41,8 @@ class UserDashboardViewModel extends ChangeNotifier {
 
   void _onFacilityChanged() {
     if (_disposed) return;
+    _streamSubscription?.cancel();
+    _streamSubscription = null;
     load();
   }
 
@@ -71,26 +75,55 @@ class UserDashboardViewModel extends ChangeNotifier {
         throw Exception('Invalid session or role');
       }
       if (user.siteAccessIds.isEmpty) {
+        _streamSubscription?.cancel();
+        _streamSubscription = null;
+        _data = null;
         _status = DashboardLoadStatus.failure;
         _errorMessage = 'No facilities are assigned to your account.';
         return;
       }
 
       final activeSiteId = activeFacilityController?.selectedSiteId;
-      final siteId = (activeSiteId != null && user.siteAccessIds.contains(activeSiteId))
-          ? activeSiteId
-          : (user.siteAccessIds.isNotEmpty ? user.siteAccessIds.first : null);
+      final siteId =
+          activeSiteId ??
+          (user.siteAccessIds.isNotEmpty ? user.siteAccessIds.first : null);
 
-      final result = await dashboardRepository.getUserDashboard(
-        user: user,
-        siteId: siteId,
-      );
-
-      if (_disposed) return;
-
-      _data = result;
-      _status = DashboardLoadStatus.success;
-      _errorMessage = null;
+      if (!isRefresh) {
+        final completer = Completer<void>();
+        _streamSubscription?.cancel();
+        _streamSubscription = dashboardRepository
+            .watchUserDashboard(user: user, siteId: siteId)
+            .listen(
+              (newData) {
+                if (_disposed) return;
+                _data = newData;
+                _status = DashboardLoadStatus.success;
+                _errorMessage = null;
+                if (!completer.isCompleted) completer.complete();
+                notifyListeners();
+              },
+              onError: (error) {
+                if (_disposed) return;
+                if (_data == null) {
+                  _status = DashboardLoadStatus.failure;
+                  _errorMessage =
+                      'Could not load dashboard data. Please try again.';
+                }
+                if (!completer.isCompleted) completer.complete();
+                notifyListeners();
+              },
+            );
+        await completer.future;
+      } else {
+        final result = await dashboardRepository.getUserDashboard(
+          user: user,
+          siteId: siteId,
+        );
+        if (_disposed) return;
+        _data = result;
+        _status = DashboardLoadStatus.success;
+        _errorMessage = null;
+      }
     } catch (e) {
       if (_disposed) return;
       if (kDebugMode) {
@@ -112,6 +145,8 @@ class UserDashboardViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _streamSubscription?.cancel();
+    _streamSubscription = null;
     activeFacilityController?.removeListener(_onFacilityChanged);
     super.dispose();
   }

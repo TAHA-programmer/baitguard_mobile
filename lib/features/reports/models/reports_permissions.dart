@@ -28,7 +28,25 @@ class ReportsPermissions {
     this.canGenerateComplianceAudit = false,
   });
 
-  factory ReportsPermissions.fromRole(UserRole role) {
+  factory ReportsPermissions.fromRole(
+    UserRole role, {
+    bool supportsExport = true,
+  }) {
+    if (!supportsExport) {
+      return const ReportsPermissions(
+        canViewSummary: true,
+        canChangePeriod: true,
+        canViewTrendChart: true,
+        canViewStationLedger: true,
+        canViewExistingExports: false,
+        canOpenStationDetail: true,
+        canDownloadMock: false,
+        canShareMock: false,
+        canGenerateMonthlyActivity: false,
+        canGenerateBaitConsumption: false,
+        canGenerateComplianceAudit: false,
+      );
+    }
     switch (role) {
       case UserRole.admin:
         return const ReportsPermissions(
