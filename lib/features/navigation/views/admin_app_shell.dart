@@ -315,8 +315,9 @@ class _AdminAppShellState extends State<AdminAppShell> {
                   ?.pushNamed(RouteNames.pendingRequests),
               onManageSystem: () => _dashboardNavigatorKey.currentState
                   ?.pushNamed(RouteNames.systemManagement),
-              onUsers: () => _dashboardNavigatorKey.currentState
-                  ?.pushNamed(RouteNames.userManagement),
+              onUsers: () => _dashboardNavigatorKey.currentState?.pushNamed(
+                RouteNames.userManagement,
+              ),
             ),
           );
         },

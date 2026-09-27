@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../app/state/app_session_controller.dart';
@@ -69,11 +70,25 @@ class AlertDetailViewModel extends ChangeNotifier {
   bool _isMutating = false;
   bool get isMutating => _isMutating;
 
+  StreamSubscription<Alert?>? _alertSub;
+  bool _disposed = false;
+
   Future<void> _initialize() async {
     final role = _sessionController.currentUser?.role;
     if (role != null) {
-      _permissions = AlertPermissions.fromRole(role);
+      _permissions = AlertPermissions.fromRole(
+        role,
+        supportsMutations: _alertRepository.supportsMutations,
+      );
     }
+    _alertSub?.cancel();
+    _alertSub = _alertRepository.watchAlertById(alertId).listen((updated) {
+      if (_disposed) return;
+      if (updated != null) {
+        _alert = updated;
+        notifyListeners();
+      }
+    });
     await _loadData();
     if (_alert != null && !_alert!.isRead) {
       await _markRead();
@@ -158,6 +173,12 @@ class AlertDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> resolveAlert() async {
+    if (!_alertRepository.supportsMutations) {
+      _actionErrorMessage = 'Alert mutations are unavailable in this pilot.';
+      _actionErrorEventId++;
+      notifyListeners();
+      return;
+    }
     if (_permissions?.canResolve != true) return;
     if (_isMutating) return;
     final user = _sessionController.currentUser;
@@ -185,6 +206,12 @@ class AlertDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> snoozeAlert(DateTime until) async {
+    if (!_alertRepository.supportsMutations) {
+      _actionErrorMessage = 'Alert mutations are unavailable in this pilot.';
+      _actionErrorEventId++;
+      notifyListeners();
+      return;
+    }
     if (_permissions?.canSnooze != true) return;
     if (_isMutating) return;
 
@@ -210,6 +237,12 @@ class AlertDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> assignAlert(String technicianId) async {
+    if (!_alertRepository.supportsMutations) {
+      _actionErrorMessage = 'Alert mutations are unavailable in this pilot.';
+      _actionErrorEventId++;
+      notifyListeners();
+      return;
+    }
     if (_permissions?.canAssign != true) return;
     if (_isMutating) return;
 
@@ -235,6 +268,12 @@ class AlertDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> dismissAlert() async {
+    if (!_alertRepository.supportsMutations) {
+      _actionErrorMessage = 'Alert mutations are unavailable in this pilot.';
+      _actionErrorEventId++;
+      notifyListeners();
+      return;
+    }
     if (_permissions?.canDismiss != true) return;
     if (_isMutating) return;
     final user = _sessionController.currentUser;
@@ -259,5 +298,13 @@ class AlertDetailViewModel extends ChangeNotifier {
       _isMutating = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _alertSub?.cancel();
+    _alertSub = null;
+    super.dispose();
   }
 }

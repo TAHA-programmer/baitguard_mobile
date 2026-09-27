@@ -83,22 +83,19 @@ class MockUserRepository implements UserRepository {
       throw const UserProfileFailure(UserProfileFailureType.missing);
     }
     if (target.id == reviewer.id || target.role == UserRole.admin) {
-      throw const UserProfileFailure(
-        UserProfileFailureType.permissionDenied,
-      );
+      throw const UserProfileFailure(UserProfileFailureType.permissionDenied);
     }
-    final facilities = request.facilityIds
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList(growable: false)
-      ..sort();
+    final facilities =
+        request.facilityIds
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toSet()
+            .toList(growable: false)
+          ..sort();
     if (request.role == UserRole.admin ||
         facilities.isEmpty ||
         facilities.length > 20) {
-      throw const UserProfileFailure(
-        UserProfileFailureType.permissionDenied,
-      );
+      throw const UserProfileFailure(UserProfileFailureType.permissionDenied);
     }
     final updated = target.copyWith(
       role: request.role,

@@ -249,7 +249,8 @@ class _InformationCard extends StatelessWidget {
               ),
             )
           else
-            for (final row in rows) _InfoRow(label: row.label, value: row.value!),
+            for (final row in rows)
+              _InfoRow(label: row.label, value: row.value!),
         ],
       ),
     );

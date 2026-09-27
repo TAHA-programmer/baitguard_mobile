@@ -234,4 +234,20 @@ class MockDashboardRepository implements DashboardRepository {
       facilityZones: snapshot.facilityZones,
     );
   }
+
+  @override
+  Stream<UserDashboardData> watchUserDashboard({
+    required AppUser user,
+    String? siteId,
+  }) async* {
+    yield await getUserDashboard(user: user, siteId: siteId);
+  }
+
+  @override
+  Stream<AdminDashboardData> watchAdminDashboard({
+    required AppUser admin,
+    String? siteId,
+  }) async* {
+    yield await getAdminDashboard(admin: admin, siteId: siteId);
+  }
 }

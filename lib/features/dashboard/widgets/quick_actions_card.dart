@@ -30,11 +30,14 @@ class QuickActionsCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Quick actions',
-              style: AppTypography.manropeBold.copyWith(
-                fontSize: 15,
-                color: AppColors.textPrimary,
+            Expanded(
+              child: Text(
+                'Quick actions',
+                style: AppTypography.manropeBold.copyWith(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Row(

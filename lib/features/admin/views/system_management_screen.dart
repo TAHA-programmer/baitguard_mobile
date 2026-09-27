@@ -14,11 +14,7 @@ import '../../../domain/models/user_role.dart';
 import '../view_models/system_management_view_model.dart';
 
 class SystemManagementScreen extends StatefulWidget {
-  const SystemManagementScreen({
-    super.key,
-    this.onAddUser,
-    this.onOpenUsers,
-  });
+  const SystemManagementScreen({super.key, this.onAddUser, this.onOpenUsers});
 
   final Future<bool?> Function()? onAddUser;
   final VoidCallback? onOpenUsers;
@@ -405,7 +401,10 @@ class _SiteRow extends StatelessWidget {
                 Container(
                   width: 7,
                   height: 7,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 5),
                 Text(

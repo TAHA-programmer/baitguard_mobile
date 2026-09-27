@@ -88,6 +88,15 @@ class StationsFlowNavigatorState extends State<StationsFlowNavigator> {
               ),
               child: const AlertDetailScreen(),
             );
+          case '/station-detail':
+            final stationId = settings.arguments as String;
+            builder = ChangeNotifierProvider(
+              create: (ctx) => StationDetailViewModel(
+                stationId: stationId,
+                stationRepository: ctx.read<StationRepository>(),
+              )..load(),
+              child: StationDetailScreen(stationId: stationId),
+            );
             break;
           default:
             if (settings.name?.startsWith('/detail/') ?? false) {

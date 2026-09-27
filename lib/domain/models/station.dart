@@ -11,6 +11,7 @@ class Station {
   final double? temperature;
   final double? humidity;
   final bool isTampered;
+  final bool hasTamperData;
   final DateTime lastSeen;
 
   // Operational state fields added for Screen 08
@@ -28,7 +29,8 @@ class Station {
     required this.batteryPercentage,
     this.temperature,
     this.humidity,
-    required this.isTampered,
+    this.isTampered = false,
+    this.hasTamperData = true,
     required this.lastSeen,
     this.notificationsMuted = false,
     this.hasCamera = false,
@@ -47,6 +49,7 @@ class Station {
     double? temperature,
     double? humidity,
     bool? isTampered,
+    bool? hasTamperData,
     DateTime? lastSeen,
     bool? notificationsMuted,
     bool? hasCamera,
@@ -63,10 +66,31 @@ class Station {
       temperature: temperature ?? this.temperature,
       humidity: humidity ?? this.humidity,
       isTampered: isTampered ?? this.isTampered,
+      hasTamperData: hasTamperData ?? this.hasTamperData,
       lastSeen: lastSeen ?? this.lastSeen,
       notificationsMuted: notificationsMuted ?? this.notificationsMuted,
       hasCamera: hasCamera ?? this.hasCamera,
       lastRefilledAt: lastRefilledAt ?? this.lastRefilledAt,
     );
   }
+
+  bool get isOnline => status != StationStatus.offline;
 }
+
+/// Default low bait threshold across BaitGuard.
+const double kLowBaitThreshold = 25.0;
+
+/// Returns true when [station] is considered to have low bait.
+bool stationIsLowBait(Station station) =>
+    station.baitPercentage <= kLowBaitThreshold;
+
+/// Returns true when [station] requires operational attention.
+/// Covers alert status, tampered, and offline states.
+bool stationNeedsAttention(Station station) =>
+    station.status == StationStatus.alert ||
+    station.status == StationStatus.offline ||
+    station.isTampered;
+
+/// Returns true when [station] is considered connected / online.
+bool stationIsConnected(Station station) =>
+    station.status != StationStatus.offline;

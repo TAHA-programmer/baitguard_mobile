@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../domain/models/station.dart';
 import '../../../domain/models/detection_event.dart';
@@ -38,29 +39,59 @@ class StationDetailViewModel extends ChangeNotifier {
   String? _actionSuccessMessage;
   String? get actionSuccessMessage => _actionSuccessMessage;
 
+  StreamSubscription<Station?>? _stationSub;
+  StreamSubscription<List<DetectionEvent>>? _eventsSub;
+  bool _disposed = false;
+
   Future<void> load() async {
     if (_status == StationDetailLoadStatus.loading) return;
 
     _status = StationDetailLoadStatus.loading;
     notifyListeners();
 
+    _stationSub?.cancel();
+    _eventsSub?.cancel();
+
     try {
       final loadedStation = await _stationRepository.getStationById(stationId);
-      if (loadedStation == null) {
+      if (_disposed) return;
+      if (loadedStation != null) {
+        _station = loadedStation;
+        _status = StationDetailLoadStatus.success;
+        final loadedEvents = await _stationRepository.getStationEvents(
+          stationId,
+        );
+        if (_disposed) return;
+        _events = List.unmodifiable(loadedEvents);
+        notifyListeners();
+      } else {
         _status = StationDetailLoadStatus.error;
         notifyListeners();
-        return;
       }
-
-      _station = loadedStation;
-      final loadedEvents = await _stationRepository.getStationEvents(stationId);
-      _events = List.unmodifiable(loadedEvents);
-      _status = StationDetailLoadStatus.success;
-    } catch (e) {
+    } catch (_) {
+      if (_disposed) return;
       _status = StationDetailLoadStatus.error;
-    } finally {
       notifyListeners();
     }
+
+    _stationSub = _stationRepository.watchStationById(stationId).listen((
+      loaded,
+    ) {
+      if (_disposed) return;
+      if (loaded != null) {
+        _station = loaded;
+        _status = StationDetailLoadStatus.success;
+        notifyListeners();
+      }
+    }, onError: (_) {});
+
+    _eventsSub = _stationRepository.watchStationEvents(stationId).listen((
+      loadedEvents,
+    ) {
+      if (_disposed) return;
+      _events = List.unmodifiable(loadedEvents);
+      notifyListeners();
+    }, onError: (_) {});
   }
 
   Future<void> refresh() async {
@@ -92,6 +123,14 @@ class StationDetailViewModel extends ChangeNotifier {
 
   Future<void> setNotificationsMuted(bool muted) async {
     if (_station == null) return;
+    if (!_stationRepository.supportsMutations) {
+      _actionErrorMessage =
+          'Muting notifications is unavailable in this pilot.';
+      _actionEventId++;
+      notifyListeners();
+      return;
+    }
+
     try {
       final updated = await _stationRepository.setNotificationsMuted(
         stationId: stationId,
@@ -109,5 +148,15 @@ class StationDetailViewModel extends ChangeNotifier {
       _actionEventId++;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _stationSub?.cancel();
+    _eventsSub?.cancel();
+    _stationSub = null;
+    _eventsSub = null;
+    super.dispose();
   }
 }

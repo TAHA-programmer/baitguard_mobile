@@ -101,4 +101,28 @@ class MockAlertRepository implements AlertRepository {
       ),
     );
   }
+
+  @override
+  bool get supportsMutations => true;
+
+  @override
+  Stream<List<Alert>> watchAlerts({required String siteId}) async* {
+    final alerts = _dataSource.alerts.where((a) {
+      final station = _dataSource.stations.firstWhere(
+        (s) => s.id == a.stationId,
+        orElse: () => _dataSource.stations.first,
+      );
+      return station.siteId == siteId;
+    }).toList();
+    yield List.unmodifiable(alerts);
+  }
+
+  @override
+  Stream<Alert?> watchAlertById(String id) async* {
+    try {
+      yield _dataSource.alerts.firstWhere((a) => a.id == id);
+    } catch (_) {
+      yield null;
+    }
+  }
 }

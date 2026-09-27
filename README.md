@@ -1,186 +1,372 @@
-# BaitGuard — Smart IoT Rodent Monitoring System
+# BaitGuard — Smart Rodent Bait-Station Monitoring
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.44.9-02569B?logo=flutter)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.12.2-0175C2?logo=dart)](https://dart.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore-FFCA28?logo=firebase)](https://firebase.google.com)
-[![Architecture](https://img.shields.io/badge/Architecture-Clean%20MVVM%20%2B%20Provider-4CAF50)](#architecture--design-patterns)
-[![License](https://img.shields.io/badge/License-Proprietary-red)](#)
+Flutter mobile application for the Trinode Industrial Internship Project. BaitGuard connects facility staff to bait-station telemetry and detection history, with role-based access for administrators, technicians, and viewers.
 
-BaitGuard is a mission-critical Flutter mobile application designed for enterprise IoT smart rodent bait-station monitoring across industrial warehouses, commercial buildings, healthcare facilities, cold storage, laboratories, and food processing environments.
+## Current delivery status — 27 September 2026
 
----
+The Android debug app has been built locally and verified on a physical phone (Infinix X6836) by the project owner. Production RTDB security rules and mobile reader grants have been configured in Firebase project `bait-guard-6f470`. The project owner personally tested Admin, Technician, and Viewer accounts, confirming that all relevant telemetry, alerts, detection events, and role-based data display correctly on the device. This delivery finalizes the Git branch publication to both the personal repository (`origin`) and the supervisor repository (`supervisor`).
 
-## 1. Product Overview
+This is a read-only operational pilot for `station_01` at `site_1`. Existing authentication and administrative workflows use Firebase Auth and Firestore. The source includes broader frontend features, but their presence does not mean the pilot hardware or backend supports every action.
 
-In large facilities, manual rodent bait inspection is labor-intensive, error-prone, and reactive. BaitGuard bridges edge IoT hardware with cloud intelligence to deliver 24/7 autonomous monitoring:
+| Area | Current state |
+| --- | --- |
+| Authentication | Firebase email/password login, reset, session restoration, email verification/activation, remembered email |
+| Access requests | Firestore request submission, admin review, approval/rejection, invitations |
+| Users and roles | Firestore users, roles, account status, and facility assignments |
+| Navigation | Admin and user shells, persistent tabs, light theme, custom top toasts |
+| Operational reads | RTDB telemetry/events, repository streams, subscribed ViewModels |
+| Station pilot | Battery %, bait %, connectivity flag, last-seen timestamp, freshness checks |
+| Detection history | Rat events and low-bait events; low-bait events do not count as rodent detections |
+| Reports | Period aggregation and charts; calendar month/quarter/year and seven-day rolling period |
+| Camera and map | Static camera placeholder; schematic facility layout |
+| Operational writes | Unsupported in the RTDB pilot; repository guards and capability checks |
+| Export | PDF generation, download, and sharing are unavailable in the RTDB pilot |
+| Android build | Local debug APK built; dependency-cache workaround documented below |
+| Production reader/rules setup | Configured and active in Firebase project `bait-guard-6f470` by project owner |
+| Live acceptance | Verified on phone by project owner (Admin, Technician, Viewer accounts tested; relevant data displays correctly) |
+| Git delivery | Final integration branch `codex/rtdb-telemetry-integration` prepared for push to both remotes |
 
-```text
-[ Physical Station (ESP32-S3) ] 
-       │ (PIR/IR motion, Load Cell bait %, Tamper switch, IR camera)
-       ▼
-[ On-Device Edge ML (YOLOv8-nano / TFLite) ]
-       │ (Rodent vs Non-rodent classification, Confidence, Telemetry)
-       ▼
-[ Cloud Backend (Firebase Auth & Firestore) ]
-       │
-       ├─────────────────────────────────────────────┐
-       ▼                                             ▼
-[ BaitGuard Flutter Mobile App ]           [ BaitGuard Web Dashboard ]
- (Field Techs, Facility Admins, Viewers)       (Central Ops Command)
-```
+## Architecture and development rules
 
----
-
-## 2. Core Mobile Application Features
-
-### 🔐 Authentication, Access & Role Control
-- **Firebase Authentication**: Robust Email/Password authentication with persistent session restoration.
-- **Role-Aware Navigation Shells**: Separate, optimized persistent navigation shells for:
-  - **Administrator**: Full facility control, user request approvals/rejections, invitations, and access management.
-  - **Technician**: Active operational station inspections, alert resolution, and report generation.
-  - **Viewer**: Facility-scoped read-only operational telemetry and dashboard monitoring.
-- **Public Request Access**: Multi-step access request flow submitted directly to Firestore.
-- **Admin Review & Approvals**: Transactional approval with assigned role and facility scoping, or rejection with reason.
-- **Account Activation**: Email-verified onboarding flow with forced token refresh.
-- **Security & Profile**: Self-service profile updates, Re-authentication Password Change, and Remember Me.
-
-### 📊 Real-Time Facility Dashboards
-- **Facility Scoping**: Filter all operational data across authorized facilities (`Warehouse A`, `Distribution Center`, etc.).
-- **Interactive Floor Map**: Custom facility layout with station status markers, zone highlights, and direct drill-down.
-- **Activity Trends & Breakdown**: Real-time detection charts, today's detection counts, and species breakdowns (Rats, Mice, None).
-- **Admin Dashboard Integration**: Real-time counters for pending access requests and system health.
-
-### 📡 Stations Management & Diagnostics
-- **Station Roster**: Filter stations by status (`Active`, `Alert`, `Low Bait`, `Offline`, `Tampered`).
-- **Detailed Station Telemetry**: Battery voltage, bait percentage, temperature, humidity, tamper sensor status, and last-seen timestamp.
-- **Static Camera Area**: Inspection camera feed placeholder designed according to design system guidelines.
-- **Station Registration**: Clean registration flow with Wi-Fi, 4G/LTE, or LoRaWAN configuration.
-
-### 🚨 Smart Alerts & Incident Resolution
-- **Multi-Filter Presets**: Fast categorization across `All`, `Rodent Detections`, `Low Bait`, `Tamper Alerts`, and `Offline Stations`.
-- **Evidence Review**: High-contrast classification confidence, time, and technician action triggers.
-
-### 📑 Reports & Operational Analytics
-- **Executive KPI Cards**: Activity metrics, bait consumption, and active station ratios.
-- **Trend Visualizations & Station Ledger**: Historical trend charts and export logs.
-- **Report Generation Feedback**: In-app modal confirmation and recent export tracking.
-
----
-
-## 3. Architecture & Design Patterns
-
-The application is engineered strictly following **Clean Architecture**, **Feature-First modularity**, and **MVVM (Model - View - ViewModel)**:
+- Flutter stable 3.44.x project; Dart constraint `^3.8.1` in `pubspec.yaml`. Use the checked-in lockfile.
+- Provider and ChangeNotifier MVVM only.
+- Pure domain models/repository interfaces without Firebase or Flutter dependencies.
+- Firebase SDK access belongs in the data layer.
+- Feature-first views, ViewModels, widgets, and navigation.
+- Central theme tokens: AppColors, AppTypography, AppSpacing, AppRadii.
+- AppTopToast for user feedback; light mode except the splash screen.
+- No live video streaming, external map API, or Cloud Functions required by this pilot.
 
 ```text
 lib/
-├── app/
-│   ├── app.dart                   # MultiProvider root & MaterialApp configuration
-│   ├── app_providers.dart         # Global Dependency Injection graph
-│   ├── navigation/                # Named routing (AppRouter) & route names
-│   ├── state/                     # Session & active facility state controllers
-│   └── theme/                     # AppColors, AppTypography, AppSpacing, AppRadii, AppTheme
-├── core/
-│   └── widgets/                   # Reusable components (AppTopToast, PrimaryButton, AppTextField)
-├── domain/
-│   ├── models/                    # 33 pure domain entities (AppUser, Station, Alert, Report, etc.)
-│   └── repositories/              # 11 abstract repository contracts
-├── data/
-│   └── repositories/
-│       ├── firebase/              # Real Firebase data sources (Auth, Users, AccessRequests)
-│       ├── mock/                  # Seeded mock operational data (Stations, Alerts, Reports)
-│       └── preferences/           # SharedPreferences for local settings
-├── features/                      # 10 self-contained feature modules
-│   ├── admin/                     # Request review, User Management, Add User
-│   ├── alerts/                    # Alerts list, filter presets, alert detail
-│   ├── authentication/            # Login, Request Access, Forgot Password, Activation
-│   ├── dashboard/                 # Admin & User interactive dashboards
-│   ├── navigation/                # Persistent AdminAppShell & UserAppShell
-│   ├── onboarding/                # Welcome screen
-│   ├── reports/                   # Reports, KPI charts, recent exports
-│   ├── settings/                  # Profile, preferences, change password, policies
-│   ├── splash/                    # Brand splash with custom animations
-│   └── stations/                  # Stations list, detail view, station registration
-└── docs/                          # Engineering handover & Firebase web integration guides
+  app/                    DI, routing, session/facility state, theme
+  core/widgets/           Shared UI components
+  domain/models/          Domain entities
+  domain/repositories/    Repository contracts
+  data/repositories/
+    firebase/             Auth, Firestore, RTDB implementations
+    mock/                 Seeded repositories and test support
+    preferences/          Local preferences
+  features/               Authentication, admin, dashboards, stations,
+                          alerts, reports, settings, navigation
+docs/                     Project and integration documentation
+test/                     Dart tests and RTDB emulator rules test
 ```
 
-### Key Architectural Guidelines
-- **State Management**: `provider` only (`ChangeNotifier` ViewModels). No mixing of state management libraries.
-- **Dependency Inversion**: Views interact exclusively with ViewModels; ViewModels consume abstract domain repositories.
-- **Design System**: Strict light-mode design tokens (centralized `AppColors`, `AppTypography` using *Manrope*, *JetBrains Mono*, and *Inter*).
-- **User Feedback**: Custom non-blocking `AppTopToast` for status feedback (no generic `SnackBar`).
+Operational path:
 
----
+```text
+ESP32 → Firebase RTDB → RealtimeStationDataSource
+      → Repository streams → ChangeNotifier ViewModels → Screens
+```
 
-## 4. Firebase Configuration
+`AppProviders` selects Firebase implementations when Firebase is initialized. Tests without an initialized Firebase app use mock implementations. A passing mock test is not proof of a working production Firebase connection. Some settings behavior remains mock-backed.
 
-| Parameter | Value |
-|---|---|
-| **Project Name** | `Bait Guard` |
-| **Project ID** | `bait-guard-6f470` |
-| **Project Number** | `609454017958` |
-| **Realtime Database** | `https://bait-guard-6f470-default-rtdb.firebaseio.com` |
-| **Storage Bucket** | `bait-guard-6f470.firebasestorage.app` |
-| **Active Auth Provider** | Email / Password |
-| **Security Rules** | Enforced via `firestore.rules` |
+## Firebase services and pilot schema
 
-> 📖 **Working with the Web Team?**  
-> Refer to [docs/FIREBASE_WEB_INTEGRATION_GUIDE.md](docs/FIREBASE_WEB_INTEGRATION_GUIDE.md) for full credentials, schemas, and instructions for integrating the web dashboard with this Firebase backend.
+| Setting | Value |
+| --- | --- |
+| Project | `bait-guard-6f470` |
+| Project number | `609454017958` |
+| Database URL | `https://bait-guard-6f470-default-rtdb.firebaseio.com/` |
+| Authentication | Email/password |
+| Profiles/access requests | Cloud Firestore |
+| Operational data | Realtime Database |
+| Firestore rules | `firestore.rules` |
+| RTDB rules | `database.rules.json` |
+| Deployment configuration | `firebase.json` |
 
----
+Use existing Firebase configuration files for this project. Account passwords, service-account keys, and authentication tokens must not be committed.
 
-## 5. Getting Started & Setup
+### Live telemetry
+
+Path: `/stationLive/station_01`
+
+```json
+{
+  "device_id": "station_01",
+  "facility_id": "site_1",
+  "battery_percentage": 86,
+  "bait_percentage": 100,
+  "online": true,
+  "last_seen_at": 1789022734000
+}
+```
+
+This is a historical example. Hardware must send current epoch-millisecond timestamps.
+
+The app marks the station offline if `online` is false or the heartbeat is more than 30 minutes old. The current implementation checks freshness every 30 seconds. When online, bait at or below 25% is low bait.
+
+### Events
+
+Path: `/stationEvents/station_01/{uniqueEventId}`
+
+Rat detection:
+
+```json
+{
+  "device_id": "station_01",
+  "facility_id": "site_1",
+  "event_type": "rat_detected",
+  "timestamp": 1789022675000
+}
+```
+
+Low-bait event:
+
+```json
+{
+  "device_id": "station_01",
+  "facility_id": "site_1",
+  "event_type": "low_bait_alert",
+  "timestamp": 1789022675000,
+  "current_pixels": 120,
+  "bait_percentage": 20,
+  "status": "Low"
+}
+```
+
+Low-bait status values are `Normal`, `Low`, and `Refill Required`. Rat events must not contain these low-bait-only fields. Hardware creates unique event IDs; it does not overwrite existing events.
+
+The current schema does **not** provide voltage, temperature, humidity, tamper readings, confidence, images, refill records, historical uptime, or acknowledgment/resolution state. It supports rat detections, not a general mouse/none classification payload.
+
+The reference export had one station, 139 rat events, and four low-bait events. These are historical counts, not fixed expected production totals. Its last heartbeat was 10 September 2026 at 11:45:34 Pakistan time.
+
+## Firebase setup before testing the phone
+
+### 1. Verify the human user
+
+In Firebase Console, open Authentication → Users and copy the UID of the human account used to sign in to the app.
+
+In Firestore → Data → `users/{uid}`, confirm the existing profile has:
+
+- The correct role: `admin`, `technician`, or `viewer`.
+- `status` set to `active`.
+- A `facilityIds` array containing the string `site_1`.
+
+Preserve all other existing profile fields and facility assignments. The ESP account is a device identity; do not use it as the mobile user or create a Firestore human profile for it.
+
+### 2. Add a Realtime Database reader grant
+
+In Realtime Database → Data, add the following tree alongside the existing `stationLive` and `stationEvents` nodes:
+
+```text
+mobileReaders
+  HUMAN_FIREBASE_AUTH_UID
+    active: true
+    facilityIds
+      site_1: true
+```
+
+The exact value at `/mobileReaders/HUMAN_FIREBASE_AUTH_UID` is:
+
+```json
+{
+  "active": true,
+  "facilityIds": {
+    "site_1": true
+  }
+}
+```
+
+Both values must be booleans, not strings. Replace the placeholder with the real Authentication UID. Repeat for each authorized human account.
+
+Use the root row's add-child control and nested child controls to build the grant. Do not put it under a station node. Do not import a grant-only JSON file at the database root: an import can replace the selected location's existing data.
+
+RTDB reader grants and Firestore facility assignments are separate. Maintain both when authorizing, disabling, or reassigning users; the current implementation does not automatically synchronize the RTDB grants.
+
+### 3. Publish RTDB rules
+
+Open `database.rules.json` in this repository and copy its complete contents into Firebase Console → Realtime Database → Rules, then Publish. Keep this file as the deployment source of truth; do not substitute abbreviated snippets from older documents.
+
+Alternatively, an authorized operator can deploy only the RTDB configuration:
+
+```powershell
+firebase deploy --only database --project bait-guard-6f470
+```
+
+Saving the local file, passing emulator tests, or pushing to GitHub does not publish Firebase rules. The rules preserve the configured ESP writer and permit human reads only through active, facility-scoped grants. Do not change root permissions to public access.
+
+Reference: [Managing and deploying Firebase rules](https://firebase.google.com/docs/rules/manage-deploy).
+
+### 4. Reopen the installed app
+
+Sign out, close/reopen the app, and sign in with the provisioned human account. Select the facility corresponding to `site_1`.
+
+Database permissions are server-side changes: they do not require an APK rebuild. Reopening the app establishes fresh subscriptions for the test.
+
+## Build and run
 
 ### Prerequisites
-- **Flutter SDK**: `3.44.x` (or `^3.8.1` SDK environment)
-- **Dart SDK**: `3.12.x`
-- **Android SDK**: Android 14 / API 34+ recommended (Minimum SDK: 23)
 
-### Windows Symlink Setup (Important)
-On Windows 10/11, Flutter plugin resolution requires symlink privileges:
-```cmd
-start ms-settings:developers
+- Flutter/Dart SDK compatible with `pubspec.yaml` and `pubspec.lock`.
+- Android SDK/tools and a connected Android phone or emulator.
+- JDK 21 for the current Gradle 8.12 wrapper.
+- Windows Developer Mode where Flutter plugins require symlinks.
+- Existing Firebase app configuration for the target platform.
+
+iOS source/configuration is present, but this handoff does not establish a successful iOS build. Building iOS requires macOS and Xcode.
+
+### Java configuration on the current Windows machine
+
+Antigravity reported that Flutter selected Android Studio's Java 25.0.2 and failed before task execution. It configured an installed JDK 21:
+
+```powershell
+flutter config --jdk-dir "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.8-hotspot"
+flutter doctor -v
 ```
-*Toggle **Developer Mode** to **ON**.*
 
-### Installation & Execution
-```bash
-# 1. Clone the repository
+Use your own installed JDK 21 path on another machine. The Flutter setting is machine-local and is not transferred by Git. Gradle 8.12 supports running on Java 21; Java 25 requires Gradle 9.1 or newer. See the [Gradle compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html).
+
+### Local Firebase dependency workaround — not portable yet
+
+The current lockfile resolves `firebase_auth 6.5.6` and `firebase_core 4.15.0`.
+
+To obtain the local Android build, Antigravity edited the cached dependency file:
+
+```text
+%LOCALAPPDATA%\Pub\Cache\hosted\pub.dev\firebase_auth-6.5.6\android\src\main\java\io\flutter\plugins\firebase\auth\FlutterFirebaseAuthPlugin.java
+```
+
+It changed the `customAuthDomain` lookup from `FlutterFirebaseCorePlugin.customAuthDomain` to `FlutterFirebasePlugin.customAuthDomain`.
+
+This change is outside this repository. A Git push does not include it, and a clean dependency download may lose it. A fresh clone/CI build has not been verified. Before declaring the project reproducibly buildable, resolve this through a verified compatible dependency release or a version-controlled dependency patch/fork and validate from a clean cache. This README records the workaround; it does not implement that follow-up.
+
+A cross-drive Kotlin cache error was also reported during earlier attempts. If that specific error recurs, investigate the project/cache locations. Dart supports setting `PUB_CACHE`, but changing it downloads fresh packages and will not preserve the local patch above. Do not treat cache relocation as an already verified universal fix.
+
+### Commands
+
+After the dependency portability issue is addressed, a fresh checkout uses:
+
+```powershell
 git clone https://github.com/TAHA-programmer/baitguard_mobile.git
-cd baitguard_mobile
-
-# 2. Install dependencies
+Set-Location baitguard_mobile
 flutter pub get
-
-# 3. Verify code health (0 issues)
+flutter doctor -v
 dart analyze lib test
-
-# 4. Run automated test suite
-flutter test
-
-# 5. Launch the application
-flutter run
+flutter test --reporter expanded
+flutter devices
+flutter run -d <device-id-from-flutter-devices>
 ```
 
----
+For the current local checkout, run these from the existing project folder rather than cloning over it.
 
-## 6. Verification & Quality Gates
+Build a debug APK:
 
-All code conforms to strict linting and test coverage standards:
-
-```bash
-# Static analysis
-dart analyze lib test
-# Output: Analyzing lib, test... No issues found!
-
-# Unit & Widget tests
-flutter test test/features/admin/manage_user_batch8d2_test.dart
-# Output: 00:01 +16: All tests passed!
+```powershell
+flutter build apk --debug
 ```
 
----
+Output: `build/app/outputs/flutter-apk/app-debug.apk`.
 
-## 7. Repository & Author
+Use the device ID returned by `flutter devices`; a display name may not uniquely identify the connected device. A debug APK is for testing; release signing and store distribution are separate work.
 
-- **Repository**: [https://github.com/TAHA-programmer/baitguard_mobile](https://github.com/TAHA-programmer/baitguard_mobile)
-- **Developer**: [TAHA-programmer](https://github.com/TAHA-programmer)
-- **Project**: Trinode Industrial Internship Project
+## Verification and acceptance
+
+| Check | Latest available evidence |
+| --- | --- |
+| Static analysis | Zero issues (dart analyze lib test clean) |
+| Realtime regression tests | 14 passed (deterministic coverage of reactivity, caching, session, heartbeat timeout) |
+| Full Flutter suite | 377 passed |
+| Emulator rules tests | 15 passed (local Firebase Auth & RTDB emulators test in test/rtdb_rules_test.js) |
+| Android debug build | Successful local APK build (build/app/outputs/flutter-apk/app-debug.apk) |
+| Phone launch & live testing | Verified by project owner on Infinix X6836; Admin, Technician, and Viewer accounts tested with live data displaying correctly |
+| Production reader/rules setup | Configured in Firebase project `bait-guard-6f470` by project owner |
+| ESP-to-phone automatic update | Verified by project owner during live phone testing |
+| Clean clone without cache edits | Not verified (requires local Pub cache workaround or upstream dependency patch) |
+
+Repeat quality gates for subsequent code changes:
+
+```powershell
+dart analyze lib test
+flutter test --reporter expanded
+flutter build apk --debug
+```
+
+Local rules testing requires Firebase CLI, Node.js, and a compatible Java installation:
+
+```powershell
+firebase emulators:exec --only auth,database --project bait-guard-6f470 "node test/rtdb_rules_test.js"
+```
+
+The rules script uses localhost emulator ports 9099 and 9000. Its sample accounts are emulator fixtures, not production credentials.
+
+### Phone acceptance sequence
+
+1. Complete the human profile, RTDB grant, and rules setup.
+2. Compare station battery, bait, and last seen against the current Firebase Console data.
+3. Keep Station Detail open while hardware publishes a new reading. Confirm automatic changes without restarting or pulling to refresh.
+4. Verify the same state across Stations and both relevant dashboards.
+5. Publish a new hardware rat event. Confirm one new detection and consistent period totals.
+6. Publish a hardware low-bait event. Confirm it does not increase rodent detection totals.
+7. Select report periods containing the actual event timestamps. Empty today/week counts can be correct for old data.
+8. Test authorized technician/viewer accounts after provisioning their own grants.
+9. Check account switching, lost access, and heartbeat expiry against the known limitations below.
+10. Record observed results before declaring production telemetry acceptance complete.
+
+Do not rewrite old timestamps merely to make the station appear online. Use fresh hardware readings. Do not replace production event history with test fixtures.
+
+### Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| Login works but telemetry fails | Published RTDB rules, exact human UID, boolean grant values, matching Firebase project |
+| No pilot facility | Firestore `facilityIds` includes `site_1`; select that facility |
+| Station offline despite `online: true` | Check age and millisecond units of `last_seen_at` |
+| Zero recent detections | Compare event dates with the selected period and local timezone |
+| Low-bait events not in rodent totals | Expected separation |
+| Export/refill/resolve unavailable | Expected read-only pilot limitation |
+| Updates fail while screen stays open | Capture Flutter/Firebase errors and check known stream/error-handling issues |
+| Fresh clone fails but local APK builds | Check JDK selection and the uncommitted dependency-cache workaround |
+
+## Deferred work and known limitations
+
+The project owner has deferred further correction work while validating Firebase setup. These items remain open; documentation does not imply they are fixed:
+
+- Active-user facility permission changes are not fully rebound through application session wiring.
+- Station/alert detail views can retain old data on null updates; stream error handling needs improvement.
+- Event history still uses open/unread states and inferred low-bait resolution without authoritative backend workflow state. Low-bait resolution does not compare reading/event timestamps.
+- Malformed event timestamps can fail during sorting before validation.
+- Stream initialization/cancellation, empty-data behavior, refresh behavior, and app-resume freshness need broader lifecycle verification.
+- Some dashboard scores/change indicators are app-derived or defaulted rather than measured backend metrics; their presentation needs review.
+- RTDB reader grants require manual administration alongside Firestore permissions.
+- Reproducible builds require replacing the local dependency-cache edit.
+- Multi-station discovery/registration, additional telemetry/species, durable alert actions, exports, images/video, and historical uptime/refills are outside the current pilot.
+- Production acceptance is verified on phone by the project owner; Git delivery is completed to both repositories on branch `codex/rtdb-telemetry-integration`.
+
+## GitHub delivery
+
+Destinations:
+
+- Personal repository: [TAHA-programmer/baitguard_mobile](https://github.com/TAHA-programmer/baitguard_mobile) (remote: `origin`)
+- Supervisor repository: [sadia-o/flutter_app](https://github.com/sadia-o/flutter_app) (remote: `supervisor`)
+
+Integration branch: `codex/rtdb-telemetry-integration`. Collaborator access has been granted for the supervisor repository.
+
+Delivery push commands:
+
+```powershell
+git push -u origin codex/rtdb-telemetry-integration
+git push supervisor codex/rtdb-telemetry-integration
+```
+
+Both remote branches receive the identical delivery commit. Pull requests can then be opened against each repository's default branch (`main`) for formal review and integration:
+- Personal repo PR: [Compare & Open PR on baitguard_mobile](https://github.com/TAHA-programmer/baitguard_mobile/compare/main...codex/rtdb-telemetry-integration?expand=1)
+- Supervisor repo PR: [Compare & Open PR on flutter_app](https://github.com/sadia-o/flutter_app/compare/main...codex/rtdb-telemetry-integration?expand=1)
+
+Do not force-push or overwrite default branches.
+
+Source delivery, Firebase deployment, and installing an APK are separate operations. A Git push also cannot transfer the machine-local JDK configuration or dependency-cache patch.
+
+## Project references
+
+- [Project guide](docs/BAITGUARD_PROJECT_GUIDE.md)
+- [Project onboarding](docs/CHATGPT_PROJECT_ONBOARDING.md)
+- [RTDB integration notes](docs/RTDB_INTEGRATION.md)
+- [Web integration guide](docs/FIREBASE_WEB_INTEGRATION_GUIDE.md)
+- [Reference pack](baitguard_antigravity_reference_pack/)
+- [RTDB rules source](database.rules.json)
+
+Earlier guides may contain historical mock behavior or stale examples. Use the executable rules file and current source as the authority, with the pending work above taken into account.
+
+Project: Trinode Industrial Internship Project. Developer: [TAHA-programmer](https://github.com/TAHA-programmer).

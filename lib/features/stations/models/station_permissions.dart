@@ -18,7 +18,18 @@ class StationPermissions {
   });
 
   /// Derives the correct [StationPermissions] from a [UserRole].
-  factory StationPermissions.fromRole(UserRole role) {
+  factory StationPermissions.fromRole(
+    UserRole role, {
+    bool supportsMutations = true,
+  }) {
+    if (!supportsMutations) {
+      return const StationPermissions(
+        canAddStation: false,
+        canRefill: false,
+        canSilence: false,
+        canLocate: true,
+      );
+    }
     switch (role) {
       case UserRole.admin:
         return const StationPermissions(

@@ -32,4 +32,18 @@ abstract class StationRepository {
   /// Persists the station via the provided data source.
   /// Throws if a station with the same ID already exists.
   Future<Station> registerStation(RegisterStationRequest request);
+
+  /// Reactive streams for live station telemetry and event updates
+  Stream<List<Station>> watchStations({String? siteId}) =>
+      Stream.fromFuture(getStations(siteId: siteId));
+
+  Stream<Station?> watchStationById(String id) =>
+      Stream.fromFuture(getStationById(id));
+
+  Stream<List<DetectionEvent>> watchStationEvents(String stationId) =>
+      Stream.fromFuture(getStationEvents(stationId));
+
+  /// Indicates whether the repository supports client-side mutations
+  /// (e.g. refill, mute, station registration).
+  bool get supportsMutations => false;
 }

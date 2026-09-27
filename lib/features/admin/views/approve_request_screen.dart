@@ -242,23 +242,23 @@ class _SectionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(title, style: AppTypography.manropeBold),
-          const SizedBox(height: AppSpacing.md),
-          child,
-        ],
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(title, style: AppTypography.manropeBold),
+            const SizedBox(height: AppSpacing.md),
+            child,
+          ],
+        ),
       ),
     );
   }
 }
 
 class _RoleTile extends StatelessWidget {
-  const _RoleTile({
-    required this.label,
-    required this.role,
-  });
+  const _RoleTile({required this.label, required this.role});
 
   final String label;
   final UserRole role;

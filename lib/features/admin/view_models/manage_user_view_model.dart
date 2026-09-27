@@ -45,8 +45,7 @@ class ManageUserViewModel extends ChangeNotifier {
   AppUser? get target => _target;
   List<SettingsFacilityOption> get facilities => _facilities;
   UserRole? get selectedRole => _selectedRole;
-  Set<String> get selectedFacilityIds =>
-      Set.unmodifiable(_selectedFacilityIds);
+  Set<String> get selectedFacilityIds => Set.unmodifiable(_selectedFacilityIds);
   bool get selectedActive => _selectedActive;
   bool get isSubmitting => _submitting;
   String? get errorMessage => _errorMessage;

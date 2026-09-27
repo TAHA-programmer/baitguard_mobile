@@ -24,7 +24,7 @@ void main() {
       dashboardRepository: MockDashboardRepository(dataSource),
       sessionController: session,
     );
-    await viewModel.load();
+    await tester.runAsync(() => viewModel.load());
     final originalDashboardData = viewModel.data;
 
     await tester.pumpWidget(
@@ -86,7 +86,7 @@ void main() {
       dashboardRepository: MockDashboardRepository(dataSource),
       sessionController: session,
     );
-    await viewModel.load();
+    await tester.runAsync(() => viewModel.load());
 
     await tester.pumpWidget(
       MaterialApp(

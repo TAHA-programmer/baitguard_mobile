@@ -64,8 +64,7 @@ class SystemManagementViewModel extends ChangeNotifier {
     if (_isLoading || _disposed) return;
     if (!isAuthorized) {
       _status = SystemManagementStatus.denied;
-      _errorMessage =
-          'You do not have permission to access System Management.';
+      _errorMessage = 'You do not have permission to access System Management.';
       _notify();
       return;
     }
@@ -83,9 +82,9 @@ class SystemManagementViewModel extends ChangeNotifier {
       if (_disposed) return;
       final users = result.toList()
         ..sort(
-          (left, right) => _displayName(left)
-              .toLowerCase()
-              .compareTo(_displayName(right).toLowerCase()),
+          (left, right) => _displayName(
+            left,
+          ).toLowerCase().compareTo(_displayName(right).toLowerCase()),
         );
       _users = List.unmodifiable(users);
       _status = SystemManagementStatus.success;
@@ -136,7 +135,9 @@ class SystemManagementViewModel extends ChangeNotifier {
         .toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) {
-      return parts.first.substring(0, parts.first.length.clamp(1, 2)).toUpperCase();
+      return parts.first
+          .substring(0, parts.first.length.clamp(1, 2))
+          .toUpperCase();
     }
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }

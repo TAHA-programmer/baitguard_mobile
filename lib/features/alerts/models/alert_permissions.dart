@@ -15,7 +15,19 @@ class AlertPermissions {
     required this.canViewStation,
   });
 
-  factory AlertPermissions.fromRole(UserRole role) {
+  factory AlertPermissions.fromRole(
+    UserRole role, {
+    bool supportsMutations = true,
+  }) {
+    if (!supportsMutations) {
+      return const AlertPermissions(
+        canResolve: false,
+        canSnooze: false,
+        canAssign: false,
+        canDismiss: false,
+        canViewStation: true,
+      );
+    }
     switch (role) {
       case UserRole.admin:
         return const AlertPermissions(

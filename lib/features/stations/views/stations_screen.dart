@@ -18,8 +18,6 @@ import '../widgets/station_list_card.dart';
 /// Displays the station list for the currently selected facility.
 /// Receives its ViewModel from the parent shell via Provider — never
 /// instantiates or creates StationsViewModel itself.
-///
-/// TODO: Replace temporary toast callbacks with StationDetailScreen navigation
 /// when Screen 09 (Station Detail) is implemented. Use onStationTap(stationId),
 /// onCameraTap(stationId, section: 'camera'), and onViewHistory(stationId,
 /// section: 'activity') to pass the stable ID and preferred section.

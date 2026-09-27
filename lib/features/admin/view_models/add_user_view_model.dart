@@ -47,8 +47,7 @@ class AddUserViewModel extends ChangeNotifier {
   bool isSubmitting = false;
   bool _disposed = false;
 
-  Set<String> get selectedFacilityIds =>
-      Set.unmodifiable(_selectedFacilityIds);
+  Set<String> get selectedFacilityIds => Set.unmodifiable(_selectedFacilityIds);
   bool get isAuthorized {
     final user = _sessionController.currentUser;
     return user != null && user.role == UserRole.admin && user.isActive;
@@ -137,8 +136,7 @@ class AddUserViewModel extends ChangeNotifier {
   Future<bool> submit() async {
     if (isSubmitting || _disposed || !isAuthorized) {
       if (!isAuthorized) {
-        errorMessage =
-            'You do not have permission to create user invitations.';
+        errorMessage = 'You do not have permission to create user invitations.';
         _notify();
       }
       return false;

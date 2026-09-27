@@ -1,8 +1,7 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../app/state/active_facility_controller.dart';
 import '../../../app/state/app_session_controller.dart';
-import '../../../data/repositories/mock/mock_station_repository.dart'
-    show stationIsLowBait, stationNeedsAttention, stationIsConnected;
 import '../../../domain/models/detected_species.dart';
 import '../../../domain/models/detection_event.dart';
 import '../../../domain/models/station.dart';
@@ -57,6 +56,7 @@ class StationsViewModel extends ChangeNotifier {
   String? get actionMessage => _actionMessage;
 
   bool _isLoading = false;
+  StreamSubscription<List<Station>>? _stationsSubscription;
 
   /// Station IDs with a mutation currently in progress.
   final Set<String> _mutatingStationIds = {};
@@ -79,21 +79,27 @@ class StationsViewModel extends ChangeNotifier {
     _facilityController.addListener(_onFacilityChanged);
   }
 
+  bool _disposed = false;
+
   void _onFacilityChanged() {
+    if (_disposed) return;
     final newSiteId = _facilityController.selectedSiteId;
     if (newSiteId == null) return;
     if (newSiteId == _lastLoadedSiteId) return; // No-op on same site
+    _stationsSubscription?.cancel();
+    _stationsSubscription = null;
+    _eventCache.clear();
     load();
   }
 
   Future<void> load() async {
-    if (_isLoading) return;
+    if (_disposed || _isLoading) return;
 
     final user = _sessionController.currentUser;
     if (user == null) {
       _status = StationsLoadStatus.failure;
       _errorMessage = 'No active session. Please sign in again.';
-      notifyListeners();
+      if (!_disposed) notifyListeners();
       return;
     }
 
@@ -101,27 +107,27 @@ class StationsViewModel extends ChangeNotifier {
     if (siteId == null) {
       _status = StationsLoadStatus.failure;
       _errorMessage = 'No permitted facility available.';
-      notifyListeners();
+      if (!_disposed) notifyListeners();
       return;
     }
 
     _isLoading = true;
     _status = StationsLoadStatus.loading;
     _errorMessage = null;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
 
     await _fetchStations(siteId: siteId, isRefresh: false);
   }
 
   Future<void> refresh() async {
-    if (_isLoading) return;
+    if (_disposed || _isLoading) return;
 
     final siteId = _facilityController.selectedSiteId;
     if (siteId == null) return;
 
     _isLoading = true;
     // Keep status as-is so existing data stays visible.
-    notifyListeners();
+    if (!_disposed) notifyListeners();
 
     await _fetchStations(siteId: siteId, isRefresh: true);
   }
@@ -134,17 +140,29 @@ class StationsViewModel extends ChangeNotifier {
       final user = _sessionController.currentUser;
       if (user == null) throw StateError('No active session');
 
-      _permissions = StationPermissions.fromRole(user.role);
+      _permissions = StationPermissions.fromRole(
+        user.role,
+        supportsMutations: _stationRepository.supportsMutations,
+      );
 
       final stations = await _stationRepository.getStations(siteId: siteId);
 
-      // Load events for each station (use cache when available).
+      if (isRefresh) {
+        _eventCache.clear();
+      }
+
       for (final station in stations) {
         if (!_eventCache.containsKey(station.id)) {
-          final events = await _stationRepository.getStationEvents(station.id);
-          _eventCache[station.id] = events;
+          try {
+            final events = await _stationRepository.getStationEvents(
+              station.id,
+            );
+            _eventCache[station.id] = events;
+          } catch (_) {}
         }
       }
+
+      if (_disposed) return;
 
       _allStations = List.unmodifiable(stations);
       _lastLoadedSiteId = siteId;
@@ -152,7 +170,43 @@ class StationsViewModel extends ChangeNotifier {
       _errorMessage = null;
 
       _applyFilterAndSearch();
+
+      if (!isRefresh) {
+        _stationsSubscription?.cancel();
+        _stationsSubscription = _stationRepository
+            .watchStations(siteId: siteId)
+            .listen(
+              (updatedStations) async {
+                if (_disposed) return;
+                for (final station in updatedStations) {
+                  if (!_eventCache.containsKey(station.id)) {
+                    try {
+                      final events = await _stationRepository.getStationEvents(
+                        station.id,
+                      );
+                      _eventCache[station.id] = events;
+                    } catch (_) {}
+                  }
+                }
+                _allStations = List.unmodifiable(updatedStations);
+                _lastLoadedSiteId = siteId;
+                _status = StationsLoadStatus.success;
+                _errorMessage = null;
+                _applyFilterAndSearch();
+                notifyListeners();
+              },
+              onError: (e) {
+                if (_disposed) return;
+                if (_allStations.isEmpty) {
+                  _status = StationsLoadStatus.failure;
+                  _errorMessage = 'Could not load stations. Please try again.';
+                  notifyListeners();
+                }
+              },
+            );
+      }
     } catch (e) {
+      if (_disposed) return;
       if (isRefresh && _allStations.isNotEmpty) {
         _refreshErrorMessage = 'Failed to refresh stations. Please try again.';
         _refreshErrorEventId++;
@@ -162,7 +216,7 @@ class StationsViewModel extends ChangeNotifier {
       }
     } finally {
       _isLoading = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -382,6 +436,9 @@ class StationsViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    _stationsSubscription?.cancel();
+    _stationsSubscription = null;
     _facilityController.removeListener(_onFacilityChanged);
     super.dispose();
   }

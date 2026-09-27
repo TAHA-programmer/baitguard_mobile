@@ -241,6 +241,7 @@ void main() {
       // Swallow the expected AssetImage-not-found error —
       // assets are not bundled in the test environment.
       tester.takeException();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Evidence'), findsOneWidget);
       expect(find.text('Captured evidence is unavailable.'), findsNothing);
@@ -250,7 +251,7 @@ void main() {
     testWidgets('15. Missing image URL shows unavailable-evidence state', (
       tester,
     ) async {
-      final vm = await createViewModel('alert_1');
+      final vm = (await tester.runAsync(() => createViewModel('alert_1')))!;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -265,10 +266,11 @@ void main() {
 
       expect(find.text('Evidence'), findsOneWidget);
       expect(find.text('Captured evidence is unavailable.'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 500));
     });
 
     testWidgets('16. Null evidence hides the entire section', (tester) async {
-      final vm = await createViewModel('alert_5');
+      final vm = (await tester.runAsync(() => createViewModel('alert_5')))!;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -282,6 +284,7 @@ void main() {
       await tester.pump(); // render first frame; no fake-clock advance
 
       expect(find.text('Evidence'), findsNothing);
+      await tester.pump(const Duration(milliseconds: 500));
     });
 
     test('17. Viewer can view genuine evidence', () async {

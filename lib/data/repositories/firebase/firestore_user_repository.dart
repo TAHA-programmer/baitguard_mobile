@@ -126,18 +126,17 @@ class FirestoreUserRepository implements UserRepository {
         request.reviewerUid == request.targetUserId) {
       throw const UserProfileFailure(UserProfileFailureType.unauthenticated);
     }
-    final normalizedFacilities = request.facilityIds
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList(growable: false)
-      ..sort();
+    final normalizedFacilities =
+        request.facilityIds
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toSet()
+            .toList(growable: false)
+          ..sort();
     if (request.role == UserRole.admin ||
         normalizedFacilities.isEmpty ||
         normalizedFacilities.length > 20) {
-      throw const UserProfileFailure(
-        UserProfileFailureType.permissionDenied,
-      );
+      throw const UserProfileFailure(UserProfileFailureType.permissionDenied);
     }
 
     try {
@@ -227,8 +226,8 @@ class FirestoreUserRepository implements UserRepository {
       'disabled' => false,
       _ => throw const UserProfileFailure(UserProfileFailureType.unknownStatus),
     };
-    final displayName = rawDisplayName is String &&
-            rawDisplayName.trim().isNotEmpty
+    final displayName =
+        rawDisplayName is String && rawDisplayName.trim().isNotEmpty
         ? rawDisplayName.trim()
         : [
             _optionalString(data['firstName']),
@@ -314,20 +313,17 @@ class FirestoreUserRepository implements UserRepository {
     required Object updatedAt,
   }) {
     if (role == UserRole.admin) {
-      throw const UserProfileFailure(
-        UserProfileFailureType.permissionDenied,
-      );
+      throw const UserProfileFailure(UserProfileFailureType.permissionDenied);
     }
-    final normalized = facilityIds
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList(growable: false)
-      ..sort();
+    final normalized =
+        facilityIds
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toSet()
+            .toList(growable: false)
+          ..sort();
     if (normalized.isEmpty || normalized.length > 20) {
-      throw const UserProfileFailure(
-        UserProfileFailureType.permissionDenied,
-      );
+      throw const UserProfileFailure(UserProfileFailureType.permissionDenied);
     }
     return <String, Object?>{
       'role': role.name,

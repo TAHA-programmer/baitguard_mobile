@@ -193,9 +193,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
                           if (viewModel.isLoadingFacilities)
                             const Padding(
                               padding: EdgeInsets.all(AppSpacing.xl),
-                              child: Center(
-                                child: CircularProgressIndicator(),
-                              ),
+                              child: Center(child: CircularProgressIndicator()),
                             )
                           else
                             for (final facility in viewModel.facilities)
@@ -212,8 +210,9 @@ class _AddUserScreenState extends State<AddUserScreen> {
                                   subtitle: Text(
                                     '${facility.stationCount} stations',
                                   ),
-                                  value: viewModel.selectedFacilityIds
-                                      .contains(facility.id),
+                                  value: viewModel.selectedFacilityIds.contains(
+                                    facility.id,
+                                  ),
                                   onChanged: viewModel.isSubmitting
                                       ? null
                                       : (_) => viewModel.toggleFacility(
@@ -289,7 +288,7 @@ class _Card extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.xl),
         border: Border.all(color: AppColors.divider),
       ),
-      child: child,
+      child: Material(color: Colors.transparent, child: child),
     );
   }
 }

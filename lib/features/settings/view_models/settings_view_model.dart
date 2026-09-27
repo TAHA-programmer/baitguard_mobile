@@ -100,5 +100,4 @@ class SettingsViewModel extends ChangeNotifier {
       await _load();
     }
   }
-
 }

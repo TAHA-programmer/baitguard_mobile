@@ -46,11 +46,14 @@ class DashboardAlertCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  title,
-                  style: AppTypography.manropeBold.copyWith(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: AppTypography.manropeBold.copyWith(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 GestureDetector(
